@@ -1,2 +1,2 @@
 # nubomedia-autonomous-installer
-NUBOMEDIA Autonomous Installer
+NUBOMEDIA Autonomous Installer - www.nubomedia.eiu

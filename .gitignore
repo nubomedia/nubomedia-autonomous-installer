@@ -1,3 +1,8 @@
+.idea
+variables.py
+hypervisor_id_rsa
+*.pyc
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
