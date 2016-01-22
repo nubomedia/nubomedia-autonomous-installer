@@ -142,6 +142,54 @@ class NovaManager(object):
             print y
         return y
 
+    def start_kvm_instance(self, instance_name, image_id, flavor, private_key, user_data):
+        self.nova.servers.create(instance_name,
+            image_id,
+            flavor,
+            meta=None,
+            files=None,
+            reservation_id=None,
+            min_count=None,
+            max_count=None,
+            security_groups=None,
+            userdata=user_data,
+            key_name=private_key,
+            availability_zone=None,
+            block_device_mapping=None,
+            block_device_mapping_v2=None,
+            nics=None,
+            scheduler_hints=None,
+            config_drive=None,
+            disk_config=None)
+        status = "PENDING"
+        instances = self.nova.servers.list()
+        instance_id = None
+        for instance in instances:
+            if instance.name == instance_name :
+                instance_id=instance.id
+                while status != "BUILD" :
+                    status = instance.status
+                    print "Instance %s has the following status %s" % (instance_name, instance.status)
+        return instance_id
+
+    def get_flavor_id(self, flavor_name):
+        flavors = self.nova.flavors.list()
+        for i in flavors:
+            x = getattr(i,"name")
+            if x == flavor_name:
+                flavorid = getattr(i, "id")
+        print "Flavor %s with id %s" % (flavor_name,flavorid)
+        return flavorid
+
+    def get_security_group_id(self, security_group):
+        sec_groups = self.nova.security_groups.list()
+        for i in sec_groups:
+            x = getattr(i,"name")
+            if x == security_group:
+                sec_group_id = getattr(i, "id")
+        print "Security group %s with id %s " % (security_group, sec_group_id)
+        return sec_group_id
+
 class GlanceManager(object):
     def __init__(self, **kwargs):
         kc_args = {}
@@ -196,6 +244,15 @@ class GlanceManager(object):
                 f.write(chunk)
         return image.status
 
+    def get_image_id(self,image_name):
+        imagelist = self.glclient.images.list()
+        for i in imagelist:
+            x = getattr(i,"name")
+            if x == image_name:
+                imageid = getattr(i, "id")
+        print "Image name %s" % imageid
+        return imageid
+
 
 class OpenStackManager(object):
     def __init__(self, **kwargs):
@@ -237,21 +294,49 @@ if __name__ == '__main__':
 
     openStackManager = OpenStackManager()
 
-    # Start NUBOMEDIA deployment
-    start_time = time.time()
-    print 'Starting NUBOMEDIA deployment'
-
-    # Upload Kurento Media Server KVM Image on Glance
-    # print glanceManager.upload_qemu_image(kms_image_name, kms_qemu_img, kms_image_description)
-
-    # Upload Kurento Media Server Docker Image on Glance
-    print glanceManager.upload_docker_image(kms_docker_img, kms_docker_image_description)
-
     # Pull all docker images on all docker compute nodes, requires OpenStack admin user
     # openStackManager.pull_docker_images()
 
     # Create a floating IP if there is no floating IP on that tenant
     # novaManager.create_floating_ip()
+
+    # Start NUBOMEDIA deployment
+    start_time = time.time()
+    print 'Starting NUBOMEDIA deployment'
+
+    # Upload Images
+
+    # Upload Kurento Media Server KVM Image on Glance
+    print glanceManager.upload_qemu_image(kms_image_name, kms_qemu_img, kms_image_description)
+
+    # Upload Kurento Media Server Docker Image on Glance
+    print glanceManager.upload_docker_image(kms_docker_img, kms_docker_image_description)
+
+    # Upload Monitoring machine Image on Glance
+    print glanceManager.upload_qemu_image(monitoring_image_name, monitoring_qemu_img, monitoring_image_description)
+
+    # Upload TURN Server Image on Glance
+    print glanceManager.upload_qemu_image(turn_image_name, turn_qemu_img, turn_image_description)
+
+    # Upload Repository Image on Glance
+    print glanceManager.upload_qemu_image(repository_image_name, repository_qemu_img, repository_image_description)
+
+    # Upload Controller Image on Glance
+    print glanceManager.upload_qemu_image(controller_image_name, controller_qemu_img, controller_image_description)
+
+    # Start NUBOMEDIA platform instances
+
+    # Start TURN Server instance
+    print novaManager.start_kvm_instance(turn_image_name, glanceManager.get_image_id(turn_image_name), novaManager.get_flavor_id(turn_flavor), private_key, turn_user_data)
+
+    # Start Repository Server instance
+    print novaManager.start_kvm_instance(repository_image_name_image_name, glanceManager.get_image_id(repository_image_name), novaManager.get_flavor_id(repository_flavor), private_key, repository_user_data)
+
+    # Start Monitoring instance
+    print novaManager.start_kvm_instance(monitoring_image_name, glanceManager.get_image_id(monitoring_image_name), novaManager.get_flavor_id(monitoring_flavor), private_key, monitoring_user_data)
+
+    # Start Controller instance
+    print novaManager.start_kvm_instance(controller_image_name, glanceManager.get_image_id(controller_image_name), novaManager.get_flavor_id(controller_flavor), private_key, controller_user_data)
 
     elapsed_time = time.time() - start_time
     print "The total ammount of time needed for deployment of the NUBOMEDIA platform was %s seconds " % elapsed_time
