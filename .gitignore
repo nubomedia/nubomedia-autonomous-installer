@@ -1,6 +1,7 @@
 .idea
 variables.py
 hypervisor_id_rsa
+Alins-MacBook-Pro
 *.pyc
 
 # Byte-compiled / optimized / DLL files

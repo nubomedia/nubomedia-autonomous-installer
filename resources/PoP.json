@@ -1,0 +1,78 @@
+{
+    "version": 0,
+    "name": "nubomedia-production2",
+    "authUrl": "http://80.96.122.48:5000/v2.0",
+    "tenant": "nubomedia",
+    "username": "nubomedia",
+    "password": "nub0m3d1@",
+    "keyPair": "alin_prv",
+    "location": {
+        "version": 0,
+        "name": "Munich",
+        "latitude": "52.525876",
+        "longitude": "13.314400"
+    },
+    "securityGroups": [
+        "default"
+    ],
+    "flavours": [
+        {
+            "version": 0,
+            "flavour_key": "d1.medium",
+            "extId": "ea071529-6bed-4299-a463-7e182d5b119f",
+            "ram": 2048,
+            "disk": 5,
+            "vcpus": 2
+        },
+        {
+            "version": 0,
+            "flavour_key": "d1.small",
+            "extId": "8f1fa051-bef8-4aad-a3b8-d48ecc842edf",
+            "ram": 1024,
+            "disk": 3,
+            "vcpus": 1
+        },
+        {
+            "version": 0,
+            "flavour_key": "d1.large",
+            "extId": "d2694a2f-a22d-4a14-ad8d-31582789ce96",
+            "ram": 4096,
+            "disk": 10,
+            "vcpus": 4
+        }
+    ],
+    "type": "openstack",
+    "images": [
+        {
+            "version": 0,
+            "extId": "f690e49c-151a-48de-bca8-6239dde8dd21",
+            "name": "nubomedia/kurento-media-server",
+            "minRam": 0,
+            "minDiskSpace": 0,
+            "isPublic": true,
+            "diskFormat": "OPTIONAL.OF(RAW)",
+            "containerFormat": "OPTIONAL.OF(UNRECOGNIZED)",
+            "created": "Oct 31, 2015 10:18:07 AM",
+            "updated": "Oct 31, 2015 10:18:07 AM"
+        }
+    ],
+    "networks": [
+        {
+            "version": 0,
+            "name": "internal_nubomedia",
+            "extId": "89d7bbde-f9e6-4ac7-bac6-863a4c8fbc62",
+            "external": false,
+            "shared": false,
+            "subnets": [
+                {
+                    "version": 0,
+                    "name": "internal_nubomedia",
+                    "extId": "755fe3de-6178-4cf1-99ad-187b72a8108c",
+                    "networkId": "89d7bbde-f9e6-4ac7-bac6-863a4c8fbc62",
+                    "cidr": "172.22.28.0/24",
+                    "gatewayIp": "172.22.28.1"
+                }
+            ]
+        }
+    ]
+}

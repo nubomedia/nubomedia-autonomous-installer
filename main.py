@@ -19,8 +19,11 @@ from glanceclient import Client as glanceClient
 from keystoneclient import session as keystoneSession
 from novaclient import client as novaClient
 from credentials import *
+from contextlib import contextmanager
 import paramiko
 import time
+import os
+import tempfile
 
 
 class KeystoneManager(object):
@@ -142,8 +145,23 @@ class NovaManager(object):
             print y
         return y
 
+    def associate_floating_ip(self, instance_id):
+        floating_ips_list = self.nova.floating_ips.list()
+        fip = None
+        for i in floating_ips_list:
+            x = getattr(i, "fixed_ip")
+            if x is None:
+                fip = getattr(i, "ip")
+                self.nova.servers.find(id=instance_id).add_floating_ip(fip)
+                return fip
+            else:
+                fip = self.nova.floating_ips.create(get_env_vars()['floating_ip_pool'])
+                self.nova.servers.find(id=instance_id).add_floating_ip(fip)
+                return fip
+        return fip
+
     def start_kvm_instance(self, instance_name, image_id, flavor, private_key, user_data):
-        self.nova.servers.create(instance_name,
+        instance = self.nova.servers.create(instance_name,
             image_id,
             flavor,
             meta=None,
@@ -161,16 +179,16 @@ class NovaManager(object):
             scheduler_hints=None,
             config_drive=None,
             disk_config=None)
+        print "Instance name is %s and instance id is %s" % (instance.name, instance.id)
         status = "PENDING"
-        instances = self.nova.servers.list()
-        instance_id = None
-        for instance in instances:
-            if instance.name == instance_name :
-                instance_id=instance.id
-                while status != "BUILD" :
-                    status = instance.status
-                    print "Instance %s has the following status %s" % (instance_name, instance.status)
-        return instance_id
+        while status != "ACTIVE":
+            instances = self.nova.servers.list()
+            for instance_temp in instances:
+                if instance_temp.id == instance.id:
+                    status = instance_temp.status
+            print "Instance %s status is %s" % (instance_name, instance.status)
+            time.sleep(10)
+        return instance.id
 
     def get_flavor_id(self, flavor_name):
         flavors = self.nova.flavors.list()
@@ -184,7 +202,7 @@ class NovaManager(object):
     def get_security_group_id(self, security_group):
         sec_groups = self.nova.security_groups.list()
         for i in sec_groups:
-            x = getattr(i,"name")
+            x = getattr(i, "name")
             if x == security_group:
                 sec_group_id = getattr(i, "id")
         print "Security group %s with id %s " % (security_group, sec_group_id)
@@ -227,6 +245,7 @@ class GlanceManager(object):
         with open(image_location, 'wb') as f:
             for chunk in image.data():
                 f.write(chunk)
+        print "Image %s has been uploaded" % image_name
         return image.status
 
     def upload_docker_image(self, docker_img_name, *docker_image_description):
@@ -244,7 +263,7 @@ class GlanceManager(object):
                 f.write(chunk)
         return image.status
 
-    def get_image_id(self,image_name):
+    def get_image_id(self, image_name):
         imagelist = self.glclient.images.list()
         for i in imagelist:
             x = getattr(i,"name")
@@ -275,6 +294,47 @@ class OpenStackManager(object):
         return None
 
 
+class NubomediaManager(object):
+    def __init__(self, **kwargs):
+        print None
+
+    def run_user_data(self, instance_ip, instance_user, instance_key, user_data):
+        # Upload user_data
+        remote_path = "/tmp/"
+
+        d = {}
+        d['username'] = instance_user
+        d['pkey'] = paramiko.RSAKey.from_private_key_file(instance_key)
+
+        transport = paramiko.Transport(instance_ip, '22')
+        transport.connect(**d)
+        sftp = paramiko.SFTPClient.from_transport(transport)
+        try:
+            sftp.chdir(remote_path)  # Test if remote_path exists
+        except IOError:
+            sftp.mkdir(remote_path)  # Create remote_path
+            sftp.chdir(remote_path)
+        print sftp.listdir()
+
+        @contextmanager
+        def tempinput(data):
+            temp = tempfile.NamedTemporaryFile(delete=False)
+            temp.write(data)
+            temp.close()
+            yield temp.name
+            os.unlink(temp.name)
+        with tempinput(user_data) as tempfilename:
+            sftp.put(tempfilename, 'nubomedia_run_script.sh')
+        sftp.close()
+
+        # Run user_data
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh.connect(instance_ip, **d)
+        ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command("sudo -- sh -c 'chmod +x /tmp/nubomedia_run_script.sh && cd /tmp && ./nubomedia_run_script.sh'")
+        print ssh_stdout.readlines()
+        return None
+
 if __name__ == '__main__':
     # Connect to Keystone
     kwargs = {}
@@ -293,18 +353,24 @@ if __name__ == '__main__':
     novaManager = NovaManager(**kwargs)
 
     openStackManager = OpenStackManager()
+    nubomediaManager = NubomediaManager()
 
     # Pull all docker images on all docker compute nodes, requires OpenStack admin user
     # openStackManager.pull_docker_images()
 
     # Create a floating IP if there is no floating IP on that tenant
-    # novaManager.create_floating_ip()
+    # print novaManager.create_floating_ip()
 
+    ##############################
     # Start NUBOMEDIA deployment
+    ##############################
+
     start_time = time.time()
     print 'Starting NUBOMEDIA deployment'
 
-    # Upload Images
+    ###########################
+    # Upload NUBOMEDIA Images
+    ###########################
 
     # Upload Kurento Media Server KVM Image on Glance
     print glanceManager.upload_qemu_image(kms_image_name, kms_qemu_img, kms_image_description)
@@ -324,22 +390,45 @@ if __name__ == '__main__':
     # Upload Controller Image on Glance
     print glanceManager.upload_qemu_image(controller_image_name, controller_qemu_img, controller_image_description)
 
+    #######################################
     # Start NUBOMEDIA platform instances
-
-    # Start TURN Server instance
-    print novaManager.start_kvm_instance(turn_image_name, glanceManager.get_image_id(turn_image_name), novaManager.get_flavor_id(turn_flavor), private_key, turn_user_data)
-
-    # Start Repository Server instance
-    print novaManager.start_kvm_instance(repository_image_name_image_name, glanceManager.get_image_id(repository_image_name), novaManager.get_flavor_id(repository_flavor), private_key, repository_user_data)
+    #######################################
 
     # Start Monitoring instance
-    print novaManager.start_kvm_instance(monitoring_image_name, glanceManager.get_image_id(monitoring_image_name), novaManager.get_flavor_id(monitoring_flavor), private_key, monitoring_user_data)
+    instance_monitoring = novaManager.start_kvm_instance(monitoring_image_name, glanceManager.get_image_id(monitoring_image_name), novaManager.get_flavor_id(monitoring_flavor), private_key, monitoring_user_data)
+    instance_monitoring_ip = novaManager.associate_floating_ip(instance_monitoring)
+    print "Monitoring instance name=%s , id=%s , public_ip=%s" % (monitoring_image_name, instance_monitoring, instance_monitoring_ip)
+
+    # Start TURN Server instance
+    instance_turn = novaManager.start_kvm_instance(turn_image_name, glanceManager.get_image_id(turn_image_name), novaManager.get_flavor_id(turn_flavor), private_key, turn_user_data)
+    instance_turn_ip = novaManager.associate_floating_ip(instance_turn)
+    print "TURN instance name=%s , id=%s , public_ip=%s" % (turn_image_name, instance_turn, instance_turn_ip)
+
+    # Start Repository Server instance
+    instance_repository = novaManager.start_kvm_instance(repository_image_name, glanceManager.get_image_id(repository_image_name), novaManager.get_flavor_id(repository_flavor), private_key, repository_user_data)
+    instance_repostory_ip = novaManager.associate_floating_ip(instance_repository)
+    print "Repository instance name=%s , id=%s , public_ip=%s" % (repository_image_name, instance_repository, instance_repostory_ip)
 
     # Start Controller instance
-    print novaManager.start_kvm_instance(controller_image_name, glanceManager.get_image_id(controller_image_name), novaManager.get_flavor_id(controller_flavor), private_key, controller_user_data)
+    instance_controller = novaManager.start_kvm_instance(controller_image_name, glanceManager.get_image_id(controller_image_name), novaManager.get_flavor_id(controller_flavor), private_key, controller_user_data)
+    instance_controller_ip = novaManager.associate_floating_ip(instance_controller)
+    print "Controller instance name=%s , id=%s , public_ip=%s" % (controller_image_name, instance_controller, instance_controller_ip)
+
+    ##########################################
+    # Configure  NUBOMEDIA services
+    ##########################################
+
+    time.sleep(60)
+    nubomediaManager.run_user_data(instance_monitoring_ip, "ubuntu", private_key, monitoring_user_data)
+
+    nubomediaManager.run_user_data(instance_controller_ip, "ubuntu", private_key, controller_user_data)
+
+    nubomediaManager.run_user_data(instance_turn_ip, "ubuntu", private_key, turn_user_data)
+
+    nubomediaManager.run_user_data(instance_repostory_ip, "ubuntu", private_key, repository_user_data)
 
     elapsed_time = time.time() - start_time
-    print "The total ammount of time needed for deployment of the NUBOMEDIA platform was %s seconds " % elapsed_time
+    print "Total time needed for deployment of the NUBOMEDIA platform was %s seconds " % elapsed_time
 
 
 
