@@ -429,7 +429,3 @@ if __name__ == '__main__':
 
     elapsed_time = time.time() - start_time
     print "Total time needed for deployment of the NUBOMEDIA platform was %s seconds " % elapsed_time
-
-
-
-

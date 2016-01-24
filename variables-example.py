@@ -25,9 +25,9 @@ openshift_ip = 'x.x.x.x'
 # NUBOMEDIA platform
 
 # NUBOMEDIA Kurento Media Server - qemu image for KVM
-kms_qemu_img = '/private/tmp/cirros-0.3.4-x86_64-disk.img'
+kms_qemu_img = 'resources/images/kurento-media-server.qcow2'
 kms_image_name = 'kurento-media-server'
-kms_image_description = 'Please login with ubuntu user and your private_key'
+kms_image_description = 'Kurento Media Server image for KVM hypervisor'
 kms_qemu_flavor = 'm1.medium'
 kms_qemu_user_data = 'ls -l'
 
@@ -38,29 +38,29 @@ kms_docker_flavor = 'd1.medium'
 kms_docker_user_data = 'ls -l'
 
 # NUBOMEDIA Monitoring machine - qemu image for KVM
-monitoring_qemu_img = '/private/tmp/cirros-0.3.4-x86_64-disk.img'
+monitoring_qemu_img = 'resources/images/nubomedia-monitoring.qcow2'
 monitoring_image_name = 'nubomedia-monitoring'
 monitoring_image_description = 'Please login with ubuntu user and your private_key'
 monitoring_flavor = 'm1.medium'
 monitoring_user_data = 'ls -l'
 
 # NUBOMEDIA TURN Server machine - qemu image for KVM
-turn_qemu_img = '/private/tmp/cirros-0.3.4-x86_64-disk.img'
+turn_qemu_img = 'resources/images/nubomedia-turn.qcow2'
 turn_image_name = 'nubomedia-turn'
 turn_image_description = 'Please login with ubuntu user and your private_key'
-turn_flavor = 'm1.medium'
+turn_flavor = 'm1.small'
 turn_user_data = 'ls -l'
 
 # NUBOMEDIA Repository Server machine - qemu image for KVM
-repository_qemu_img = '/private/tmp/cirros-0.3.4-x86_64-disk.img'
+repository_qemu_img = 'resources/images/nubomedia-repository.qcow2'
 repository_image_name = 'nubomedia-repository'
 repository_image_description = 'Please login with ubuntu user and your private_key'
 repository_flavor = 'm1.medium'
 repository_user_data = 'ls -l'
 
 # NUBOMEDIA Conroller machine - qemu image for KVM
-controller_qemu_img = '/private/tmp/cirros-0.3.4-x86_64-disk.img'
-controller_image_name = 'nubomedia-controller-template'
+controller_qemu_img = 'resources/images/nubomedia-controller.qcow2'
+controller_image_name = 'nubomedia-controller'
 controller_image_description = 'Please login with ubuntu user and your private_key'
 controller_flavor = 'm1.xlarge'
 controller_user_data = """#!/bin/bash
