@@ -445,8 +445,10 @@ if __name__ == '__main__':
     ##########################################
     # Configure  NUBOMEDIA services
     ##########################################
-
-    time.sleep(60)
+    
+    # Added a delay before running the configuration scripts on the instances in order to allow them to be properly provisioned and booted
+    time.sleep(240)
+    
     nubomediaManager.run_user_data(instance_monitoring_ip, "ubuntu", private_key, monitoring_user_data)
 
     nubomediaManager.run_user_data(instance_controller_ip, "ubuntu", private_key, controller_user_data)
