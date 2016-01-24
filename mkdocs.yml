@@ -1,2 +1,3 @@
+site_name: NUBOMEDIA Autonomous Installer
 pages:
-- Home: 'index.md'
+- Home: 'README.md'
