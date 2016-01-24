@@ -1,4 +1,6 @@
 # NAI - nubomedia-autonomous-installer
+
+This project is part of NUBOMEDIA  
 NUBOMEDIA Autonomous Installer - http://www.nubomedia.eu
 
 ## Prerequisites
