@@ -15,6 +15,7 @@ pip install -r requirements.txt --upgrade
 ```
 You should have root access to the OpenStack environment in order to install and configure the nova-docker hypervisor and the patch for it from (https://github.com/usv-public/nubomedia-nova-docker) on the compute nodes that should run docker as a hypervisor.
 
+## Update the configuration file
 Before starting the installation you must rename the *variables-examples.py* to *variables.py*. And then replace each variable with the desired value.
 ```
 mv variables-example.py variables.py
