@@ -11,7 +11,9 @@ Then you should install pip and after that you should install the dependecies us
 easy_install pip
 pip install -r requirements.txt --upgrade
 ```
-Before starting the installation you will first have to rename the *variables-examples.py* to *variables.py*. And then replace each variable with the desired value.
+You should have root access to the OpenStack environment in order to install and configure the nova-docker hypervisor and the patch for it from (https://github.com/usv-public/nubomedia-nova-docker) on the compute nodes that should run docker as a hypervisor.
+
+Before starting the installation you must rename the *variables-examples.py* to *variables.py*. And then replace each variable with the desired value.
 ```
 mv variables-example.py variables.py
 ```
@@ -31,6 +33,7 @@ glance_endpoint = 'http://x.x.x.x:9292'
 *x.x.x.x* is the public IP address of your OpenStack.
 
 ### Master SSH credentials
+This step is not needed if you already have nova-docker hypervisors installed on your OpenStack env. and you have applied the patch from the following repository: https://github.com/usv-public/nubomedia-nova-docker .
 ```
 master_ip = 'x.x.x.x'
 master_user = 'root'
