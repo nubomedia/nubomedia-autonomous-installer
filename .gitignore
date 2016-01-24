@@ -3,6 +3,7 @@ variables.py
 hypervisor_id_rsa
 Alins-MacBook-Pro
 *.pyc
+resources/images/*.qcow2
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
