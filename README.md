@@ -48,38 +48,68 @@ private_key = 'private_key_for_accesssing_instances'
 openshift_ip = 'x.x.x.x'
 ```
 You should define the floating (public) IP pool name for the OpenStack.  
-It is best to also add a public key on the OpenStack tenant you want to deploy NUBOMEDIA and then add the private key file to the autonomous-installer directory in order to allow it to customize the instances after deployment.
+It is best to also add a public key on the OpenStack tenant you want to deploy NUBOMEDIA and then add the private key file to the autonomous-installer directory in order to allow it to customize the instances after deployment.  
+*x.x.x.x* represents the public IP address of the OpenShift PaaS.
 
 ## NUBOMEDIA images
 You should download all the NUBOMEDIA images and store them on the *repository/images/* directory.
 
-# NUBOMEDIA Kurento Media Server - qemu image for KVM
+### NUBOMEDIA Kurento Media Server - qemu image for KVM
 ```
 kms_qemu_img = 'resources/images/kurento-media-server.qcow2'
 kms_image_name = 'kurento-media-server'
 kms_image_description = 'Kurento Media Server image for KVM hypervisor'
 kms_qemu_flavor = 'm1.medium'
 ```
-Kurento Media Server requires a flavor with at least 2GB of ram, 1 x86_64 CPU and 5GB of RAM.
+Kurento Media Server requires a flavor with at least 2GB of ram, 1 x86_64 CPU and 5GB of disk space.
 
-# NUBOMEDIA Kurento Media Server Docker image for - Docker
+### NUBOMEDIA Kurento Media Server Docker image for - Docker
 ```
 kms_docker_img = 'nubomedia/kurento-media-server'
 kms_docker_image_description = 'Please login with root user and your docker image root password'
 kms_docker_flavor = 'd1.medium'
 ```
-The Docker image for kurento-media-server is stored on the NUBOMEDIA dockerhub repository (https://hub.docker.com/r/nubomedia/kurento-media-server/ ).  The minimum flavor type would be at least 2GB of ram, 1 x86_64 CPU and 5GB of RAM.
+The Docker image for kurento-media-server is stored on the NUBOMEDIA dockerhub repository (https://hub.docker.com/r/nubomedia/kurento-media-server/ ).  The minimum flavor type would be at least 2GB of ram, 1 x86_64 CPU and 5GB of disk space.
 
-# NUBOMEDIA Monitoring machine - qemu image for KVM
+### NUBOMEDIA Monitoring machine - qemu image for KVM
 ```
-monitoring_qemu_img = '/private/tmp/cirros-0.3.4-x86_64-disk.img'
+monitoring_qemu_img = 'resources/images/nubomedia-monitoring.qcow2'
 monitoring_image_name = 'nubomedia-monitoring'
 monitoring_image_description = 'Please login with ubuntu user and your private_key'
 monitoring_flavor = 'm1.medium'
 ```
+The NUBOMEDIA Monitoring machine runs logstash, Kibana, and Graphite. All the logs of the media-server instances are stored on this machine. The required flavor for running it should have at least 2GB of ram, 1 x86_64 CPU and 15GB disk space.
+
+### NUBOMEDIA TURN Server machine - qemu image for KVM
+```
+turn_qemu_img = 'resources/images/nubomedia-turn.qcow2'
+turn_image_name = 'nubomedia-turn'
+turn_image_description = 'Please login with ubuntu user and your private_key'
+turn_flavor = 'm1.small'
+```
+The TURN Server should have at least 1G of RAM, 1 x86_64 CPU and 5GB disk space.
+All the NUBOMEDIA Kurento Media Server instances should be configured to use this server IP for TURN and STUN.
+
+### NUBOMEDIA Repository Server machine - qemu image for KVM
+```
+repository_qemu_img = 'resources/images/nubomedia-repository.qcow2'
+repository_image_name = 'nubomedia-repository'
+repository_image_description = 'Please login with ubuntu user and your private_key'
+repository_flavor = 'm1.medium'
+```
+The NUBOMEDIA repository machine hosts the debian repository and on the http://repository.nubomedia.eu/apps/files/ you have the kurento-tutorial-java repository so you can use it as the APP server for some of the Kurento tutorials. The recommanded configuration is 1G of RAM, 1 x86_64 CPU and 5GB of disk space.
+
+### NUBOMEDIA Conroller machine - qemu image for KVM
+```
+controller_qemu_img = 'resources/images/nubomedia-controller.qcow2'
+controller_image_name = 'nubomedia-controller'
+controller_image_description = 'Please login with ubuntu user and your private_key'
+controller_flavor = 'm1.xlarge'
+```
+The NUBOMEDIA Controller instance hosts the VNFM and the NUBOMEDIA PaaS manager. The flavor type of for the nubomedia-controller should have at least 8GB of ram, 2 x86_64 CPU and 10GB disk space.
+
 ## Run the installer
-When you have defined all the necessary variables you can start the installer with the following command:
+After defined all the necessary variables you can start the installer with the following command:
 ```
 python main.py
 ```
-
