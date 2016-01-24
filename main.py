@@ -24,7 +24,35 @@ import paramiko
 import time
 import os
 import tempfile
+import logging
+import sys
 
+class StreamToLogger(object):
+   """
+   Fake file-like stream object that redirects writes to a logger instance.
+   """
+   def __init__(self, logger, log_level=logging.INFO):
+      self.logger = logger
+      self.log_level = log_level
+      self.linebuf = ''
+
+   def write(self, buf):
+      for line in buf.rstrip().splitlines():
+         self.logger.log(self.log_level, line.rstrip())
+
+logging.basicConfig(
+   level=logging.DEBUG,
+   format='%(asctime)s:%(levelname)s:%(name)s:%(message)s',
+   filename="installer.log",
+   filemode='a'
+)
+stdout_logger = logging.getLogger('STDOUT')
+sl = StreamToLogger(stdout_logger, logging.INFO)
+sys.stdout = sl
+
+stderr_logger = logging.getLogger('STDERR')
+sl = StreamToLogger(stderr_logger, logging.ERROR)
+sys.stderr = sl
 
 class KeystoneManager(object):
     def __init__(self, **kwargs):
@@ -372,60 +400,60 @@ if __name__ == '__main__':
     # Upload NUBOMEDIA Images
     ###########################
 
-    # Upload Kurento Media Server KVM Image on Glance
-    print glanceManager.upload_qemu_image(kms_image_name, kms_qemu_img, kms_image_description)
-
-    # Upload Kurento Media Server Docker Image on Glance
-    print glanceManager.upload_docker_image(kms_docker_img, kms_docker_image_description)
-
-    # Upload Monitoring machine Image on Glance
-    print glanceManager.upload_qemu_image(monitoring_image_name, monitoring_qemu_img, monitoring_image_description)
-
-    # Upload TURN Server Image on Glance
-    print glanceManager.upload_qemu_image(turn_image_name, turn_qemu_img, turn_image_description)
-
-    # Upload Repository Image on Glance
-    print glanceManager.upload_qemu_image(repository_image_name, repository_qemu_img, repository_image_description)
-
-    # Upload Controller Image on Glance
-    print glanceManager.upload_qemu_image(controller_image_name, controller_qemu_img, controller_image_description)
-
-    #######################################
-    # Start NUBOMEDIA platform instances
-    #######################################
-
-    # Start Monitoring instance
-    instance_monitoring = novaManager.start_kvm_instance(monitoring_image_name, glanceManager.get_image_id(monitoring_image_name), novaManager.get_flavor_id(monitoring_flavor), private_key, monitoring_user_data)
-    instance_monitoring_ip = novaManager.associate_floating_ip(instance_monitoring)
-    print "Monitoring instance name=%s , id=%s , public_ip=%s" % (monitoring_image_name, instance_monitoring, instance_monitoring_ip)
-
-    # Start TURN Server instance
-    instance_turn = novaManager.start_kvm_instance(turn_image_name, glanceManager.get_image_id(turn_image_name), novaManager.get_flavor_id(turn_flavor), private_key, turn_user_data)
-    instance_turn_ip = novaManager.associate_floating_ip(instance_turn)
-    print "TURN instance name=%s , id=%s , public_ip=%s" % (turn_image_name, instance_turn, instance_turn_ip)
-
-    # Start Repository Server instance
-    instance_repository = novaManager.start_kvm_instance(repository_image_name, glanceManager.get_image_id(repository_image_name), novaManager.get_flavor_id(repository_flavor), private_key, repository_user_data)
-    instance_repostory_ip = novaManager.associate_floating_ip(instance_repository)
-    print "Repository instance name=%s , id=%s , public_ip=%s" % (repository_image_name, instance_repository, instance_repostory_ip)
-
-    # Start Controller instance
-    instance_controller = novaManager.start_kvm_instance(controller_image_name, glanceManager.get_image_id(controller_image_name), novaManager.get_flavor_id(controller_flavor), private_key, controller_user_data)
-    instance_controller_ip = novaManager.associate_floating_ip(instance_controller)
-    print "Controller instance name=%s , id=%s , public_ip=%s" % (controller_image_name, instance_controller, instance_controller_ip)
-
-    ##########################################
-    # Configure  NUBOMEDIA services
-    ##########################################
-
-    time.sleep(60)
-    nubomediaManager.run_user_data(instance_monitoring_ip, "ubuntu", private_key, monitoring_user_data)
-
-    nubomediaManager.run_user_data(instance_controller_ip, "ubuntu", private_key, controller_user_data)
-
-    nubomediaManager.run_user_data(instance_turn_ip, "ubuntu", private_key, turn_user_data)
-
-    nubomediaManager.run_user_data(instance_repostory_ip, "ubuntu", private_key, repository_user_data)
+    # # Upload Kurento Media Server KVM Image on Glance
+    # print glanceManager.upload_qemu_image(kms_image_name, kms_qemu_img, kms_image_description)
+    #
+    # # Upload Kurento Media Server Docker Image on Glance
+    # print glanceManager.upload_docker_image(kms_docker_img, kms_docker_image_description)
+    #
+    # # Upload Monitoring machine Image on Glance
+    # print glanceManager.upload_qemu_image(monitoring_image_name, monitoring_qemu_img, monitoring_image_description)
+    #
+    # # Upload TURN Server Image on Glance
+    # print glanceManager.upload_qemu_image(turn_image_name, turn_qemu_img, turn_image_description)
+    #
+    # # Upload Repository Image on Glance
+    # print glanceManager.upload_qemu_image(repository_image_name, repository_qemu_img, repository_image_description)
+    #
+    # # Upload Controller Image on Glance
+    # print glanceManager.upload_qemu_image(controller_image_name, controller_qemu_img, controller_image_description)
+    #
+    # #######################################
+    # # Start NUBOMEDIA platform instances
+    # #######################################
+    #
+    # # Start Monitoring instance
+    # instance_monitoring = novaManager.start_kvm_instance(monitoring_image_name, glanceManager.get_image_id(monitoring_image_name), novaManager.get_flavor_id(monitoring_flavor), private_key, monitoring_user_data)
+    # instance_monitoring_ip = novaManager.associate_floating_ip(instance_monitoring)
+    # print "Monitoring instance name=%s , id=%s , public_ip=%s" % (monitoring_image_name, instance_monitoring, instance_monitoring_ip)
+    #
+    # # Start TURN Server instance
+    # instance_turn = novaManager.start_kvm_instance(turn_image_name, glanceManager.get_image_id(turn_image_name), novaManager.get_flavor_id(turn_flavor), private_key, turn_user_data)
+    # instance_turn_ip = novaManager.associate_floating_ip(instance_turn)
+    # print "TURN instance name=%s , id=%s , public_ip=%s" % (turn_image_name, instance_turn, instance_turn_ip)
+    #
+    # # Start Repository Server instance
+    # instance_repository = novaManager.start_kvm_instance(repository_image_name, glanceManager.get_image_id(repository_image_name), novaManager.get_flavor_id(repository_flavor), private_key, repository_user_data)
+    # instance_repostory_ip = novaManager.associate_floating_ip(instance_repository)
+    # print "Repository instance name=%s , id=%s , public_ip=%s" % (repository_image_name, instance_repository, instance_repostory_ip)
+    #
+    # # Start Controller instance
+    # instance_controller = novaManager.start_kvm_instance(controller_image_name, glanceManager.get_image_id(controller_image_name), novaManager.get_flavor_id(controller_flavor), private_key, controller_user_data)
+    # instance_controller_ip = novaManager.associate_floating_ip(instance_controller)
+    # print "Controller instance name=%s , id=%s , public_ip=%s" % (controller_image_name, instance_controller, instance_controller_ip)
+    #
+    # ##########################################
+    # # Configure  NUBOMEDIA services
+    # ##########################################
+    #
+    # time.sleep(60)
+    # nubomediaManager.run_user_data(instance_monitoring_ip, "ubuntu", private_key, monitoring_user_data)
+    #
+    # nubomediaManager.run_user_data(instance_controller_ip, "ubuntu", private_key, controller_user_data)
+    #
+    # nubomediaManager.run_user_data(instance_turn_ip, "ubuntu", private_key, turn_user_data)
+    #
+    # nubomediaManager.run_user_data(instance_repostory_ip, "ubuntu", private_key, repository_user_data)
 
     elapsed_time = time.time() - start_time
     print "Total time needed for deployment of the NUBOMEDIA platform was %s seconds " % elapsed_time
