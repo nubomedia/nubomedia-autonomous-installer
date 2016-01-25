@@ -29,34 +29,61 @@ kms_qemu_img = 'resources/images/kurento-media-server.qcow2'
 kms_image_name = 'kurento-media-server'
 kms_image_description = 'Kurento Media Server image for KVM hypervisor'
 kms_qemu_flavor = 'm1.medium'
-kms_qemu_user_data = 'ls -l'
+kms_qemu_user_data = """#!/bin/bash
+### KURENTO MEDIA SERVER CONFIGURATION ###
+INSTANCE_NAME=$(curl http://169.254.169.254/latest/meta-data/hostname)
+IFS='.' read -ra array <<< "$INSTANCE_NAME"
+instance_name_simple=${array[0]}
+sed -i " 1 s/.*/& $instance_name_simple/" /etc/hosts
+
+EXTERNAL_IP=$(curl http://169.254.169.254/latest/meta-data/public-ipv4)
+PUBLIC_IP="PUBLIC_IP"
+LOCAL_IP=$(curl http://169.254.169.254/latest/meta-data/local-ipv4)
+LOCAL_IP_TEMPLATE="LOCAL_IP"
+HOST_TEMPLATE="HOSTNAMEMONITORING"
+
+sed -i "s/${HOST_TEMPLATE}/${instance_name_simple}/g" /etc/collectd/collectd.conf
+sed -i "s/${LOCAL_IP_TEMPLATE}/${LOCAL_IP}/g" /etc/collectd/collectd.conf
+"""
 
 # NUBOMEDIA Kurento Media Server Docker image for - Docker
 kms_docker_img = 'nubomedia/kurento-media-server'
 kms_docker_image_description = 'Please login with root user and your docker image root password'
 kms_docker_flavor = 'd1.medium'
-kms_docker_user_data = 'ls -l'
+kms_docker_user_data = ''
 
 # NUBOMEDIA Monitoring machine - qemu image for KVM
 monitoring_qemu_img = 'resources/images/nubomedia-monitoring.qcow2'
 monitoring_image_name = 'nubomedia-monitoring'
 monitoring_image_description = 'Please login with ubuntu user and your private_key'
 monitoring_flavor = 'm1.medium'
-monitoring_user_data = 'ls -l'
+monitoring_user_data = """#!/bin/bash
+### NUBOMEDIA MONITORING MACHINE CONFIGURATION ###
+INSTANCE_NAME=$(curl http://169.254.169.254/latest/meta-data/hostname)
+IFS='.' read -ra array <<< "$INSTANCE_NAME"
+instance_name_simple=${array[0]}
+sed -i " 1 s/.*/& $instance_name_simple/" /etc/hosts
+
+EXTERNAL_IP=$(curl http://169.254.169.254/latest/meta-data/public-ipv4)
+PUBLIC_IP="PUBLIC_IP"
+
+sed -i "s/${PUBLIC_IP}/${EXTERNAL_IP}/g" /etc/logstash-forwarder.conf
+sed -i "s/${PUBLIC_IP}/${EXTERNAL_IP}/g" /etc/icinga2/features-enabled/graphite.conf
+"""
 
 # NUBOMEDIA TURN Server machine - qemu image for KVM
 turn_qemu_img = 'resources/images/nubomedia-turn.qcow2'
 turn_image_name = 'nubomedia-turn'
 turn_image_description = 'Please login with ubuntu user and your private_key'
 turn_flavor = 'm1.small'
-turn_user_data = 'ls -l'
+turn_user_data = ''
 
 # NUBOMEDIA Repository Server machine - qemu image for KVM
 repository_qemu_img = 'resources/images/nubomedia-repository.qcow2'
 repository_image_name = 'nubomedia-repository'
 repository_image_description = 'Please login with ubuntu user and your private_key'
 repository_flavor = 'm1.medium'
-repository_user_data = 'ls -l'
+repository_user_data = ''
 
 # NUBOMEDIA Conroller machine - qemu image for KVM
 controller_qemu_img = 'resources/images/nubomedia-controller.qcow2'
