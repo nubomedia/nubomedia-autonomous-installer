@@ -2,6 +2,9 @@
 # If you have password authentication disabled on you master then you have to provide a private key file
 # location replacing master_id_rsa value for the master_key variable.
 
+# Enable logging to installer.log file ?
+enabled_logging = False
+
 # Keystone
 auth_url = 'http://x.x.x.x:5000/v2.0'
 username = 'admin'
@@ -56,7 +59,7 @@ kms_docker_user_data = ''
 monitoring_qemu_img = 'resources/images/nubomedia-monitoring.qcow2'
 monitoring_image_name = 'nubomedia-monitoring'
 monitoring_image_description = 'Please login with ubuntu user and your private_key'
-monitoring_flavor = 'm1.medium'
+monitoring_flavor = 'm1.xlarge'
 monitoring_user_data = """#!/bin/bash
 ### NUBOMEDIA MONITORING MACHINE CONFIGURATION ###
 INSTANCE_NAME=$(curl http://169.254.169.254/latest/meta-data/hostname)
@@ -67,8 +70,23 @@ sed -i " 1 s/.*/& $instance_name_simple/" /etc/hosts
 EXTERNAL_IP=$(curl http://169.254.169.254/latest/meta-data/public-ipv4)
 PUBLIC_IP="PUBLIC_IP"
 
+HOST_TEMPLATE="HOSTNAMEMONITORING"
+
+sed -i "s/${HOST_TEMPLATE}/${instance_name_simple}/g" /etc/collectd/collectd.conf
 sed -i "s/${PUBLIC_IP}/${EXTERNAL_IP}/g" /etc/logstash-forwarder.conf
 sed -i "s/${PUBLIC_IP}/${EXTERNAL_IP}/g" /etc/icinga2/features-enabled/graphite.conf
+
+# Format the new attached disk for storing the metrics
+(echo n; echo p; echo 1; echo ; echo; echo w) | fdisk /dev/vdb
+mkfs.ext4 /dev/vdb1
+
+# Add the new partition to be automounted on reboot
+sed -i "\$a/dev/vdb1       /data   ext4    defaults 0 0" /etc/fstab
+
+# Mount the partition
+mount -a
+
+reboot
 """
 
 # NUBOMEDIA TURN Server machine - qemu image for KVM

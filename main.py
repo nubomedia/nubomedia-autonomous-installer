@@ -18,6 +18,7 @@ from keystoneclient.v2_0 import client as keystoneClient
 from glanceclient import Client as glanceClient
 from keystoneclient import session as keystoneSession
 from novaclient import client as novaClient
+from cinderclient import client as cinderClient
 from credentials import *
 from contextlib import contextmanager
 import paramiko
@@ -46,13 +47,15 @@ logging.basicConfig(
    filename="installer.log",
    filemode='a'
 )
-stdout_logger = logging.getLogger('STDOUT')
-sl = StreamToLogger(stdout_logger, logging.INFO)
-sys.stdout = sl
 
-stderr_logger = logging.getLogger('STDERR')
-sl = StreamToLogger(stderr_logger, logging.ERROR)
-sys.stderr = sl
+if enabled_logging:
+    stdout_logger = logging.getLogger('STDOUT')
+    sl = StreamToLogger(stdout_logger, logging.INFO)
+    sys.stdout = sl
+
+    stderr_logger = logging.getLogger('STDERR')
+    sl = StreamToLogger(stderr_logger, logging.ERROR)
+    sys.stderr = sl
 
 class KeystoneManager(object):
     def __init__(self, **kwargs):
@@ -301,6 +304,22 @@ class GlanceManager(object):
         return imageid
 
 
+class CinderManager(object):
+    def __init__(self, **kwargs):
+        self.cinder = cinderClient.Client("1", **kwargs)
+
+    def get_volumes_list(self):
+        print self.cinder.volumes.list()
+        return self.cinder.volumes.list()
+
+    def create_volume(self, name, size):
+        myvol = self.cinder.volumes.create(display_name=name, size=int(size))
+        return myvol
+
+    def attach_volume(self, volume, instance_id, path):
+        attach = volume.attach(instance_id, path)
+        return attach
+
 class OpenStackManager(object):
     def __init__(self, **kwargs):
         print None
@@ -383,6 +402,16 @@ if __name__ == '__main__':
     openStackManager = OpenStackManager()
     nubomediaManager = NubomediaManager()
 
+    # Connect to Cinder
+    cinderManager = CinderManager(**kwargs)
+    cinderManager.get_volumes_list()
+
+    # Create and attach a volume example
+    #instance_controller = novaManager.start_kvm_instance(controller_image_name, glanceManager.get_image_id(controller_image_name), novaManager.get_flavor_id(controller_flavor), private_key, controller_user_data)
+    #test = cinderManager.create_volume("test2", 10)
+    #cinderManager.attach_volume(test, instance_controller, '/dev/vdb')
+
+
     # Pull all docker images on all docker compute nodes, requires OpenStack admin user
     # openStackManager.pull_docker_images()
 
@@ -413,7 +442,7 @@ if __name__ == '__main__':
     print glanceManager.upload_qemu_image(turn_image_name, turn_qemu_img, turn_image_description)
 
     # Upload Repository Image on Glance
-    print glanceManager.upload_qemu_image(repository_image_name, repository_qemu_img, repository_image_description)
+    # print glanceManager.upload_qemu_image(repository_image_name, repository_qemu_img, repository_image_description)
 
     # Upload Controller Image on Glance
     print glanceManager.upload_qemu_image(controller_image_name, controller_qemu_img, controller_image_description)
@@ -432,10 +461,12 @@ if __name__ == '__main__':
     instance_turn_ip = novaManager.associate_floating_ip(instance_turn)
     print "TURN instance name=%s , id=%s , public_ip=%s" % (turn_image_name, instance_turn, instance_turn_ip)
 
-    # Start Repository Server instance
-    instance_repository = novaManager.start_kvm_instance(repository_image_name, glanceManager.get_image_id(repository_image_name), novaManager.get_flavor_id(repository_flavor), private_key, repository_user_data)
-    instance_repostory_ip = novaManager.associate_floating_ip(instance_repository)
-    print "Repository instance name=%s , id=%s , public_ip=%s" % (repository_image_name, instance_repository, instance_repostory_ip)
+    # Start Repository Server instance - is not needed because the NUBOMEDIA consortium is hosting the repository
+    # instance_repository = novaManager.start_kvm_instance(repository_image_name, glanceManager.get_image_id(repository_image_name), novaManager.get_flavor_id(repository_flavor), private_key, repository_user_data)
+    # instance_repostory_ip = novaManager.associate_floating_ip(instance_repository)
+    # print "Repository instance name=%s , id=%s , public_ip=%s" % (repository_image_name, instance_repository, instance_repostory_ip)
+    # time.sleep(240)
+    # nubomediaManager.run_user_data(instance_repostory_ip, "ubuntu", private_key, repository_user_data)
 
     # Start Controller instance
     instance_controller = novaManager.start_kvm_instance(controller_image_name, glanceManager.get_image_id(controller_image_name), novaManager.get_flavor_id(controller_flavor), private_key, controller_user_data)
@@ -445,17 +476,24 @@ if __name__ == '__main__':
     ##########################################
     # Configure  NUBOMEDIA services
     ##########################################
-    
+
     # Added a delay before running the configuration scripts on the instances in order to allow them to be properly provisioned and booted
     time.sleep(240)
-    
-    nubomediaManager.run_user_data(instance_monitoring_ip, "ubuntu", private_key, monitoring_user_data)
 
-    nubomediaManager.run_user_data(instance_controller_ip, "ubuntu", private_key, controller_user_data)
+    nubomediaManager.run_user_data(instance_monitoring_ip, "ubuntu", private_key, monitoring_user_data)
 
     nubomediaManager.run_user_data(instance_turn_ip, "ubuntu", private_key, turn_user_data)
 
-    nubomediaManager.run_user_data(instance_repostory_ip, "ubuntu", private_key, repository_user_data)
+    nubomediaManager.run_user_data(instance_controller_ip, "ubuntu", private_key, controller_user_data)
 
     elapsed_time = time.time() - start_time
     print "Total time needed for deployment of the NUBOMEDIA platform was %s seconds " % elapsed_time
+
+    # Exit
+    sys.exit(0)
+
+
+
+
+
+
