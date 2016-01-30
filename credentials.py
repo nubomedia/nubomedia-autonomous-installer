@@ -15,7 +15,7 @@
 #    under the License.
 
 import os
-from variables import *
+from images_configurations import *
 
 
 def get_keystone_creds():

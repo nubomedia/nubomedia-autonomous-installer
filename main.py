@@ -27,6 +27,7 @@ import os
 import tempfile
 import logging
 import sys
+import requests
 
 class StreamToLogger(object):
    """
@@ -345,6 +346,27 @@ class NubomediaManager(object):
     def __init__(self, **kwargs):
         print None
 
+    def upload_file(self, instance_ip, instance_user, instance_key, file_data, remote_filename, remote_path):
+        # Upload file
+
+        d = {}
+        d['username'] = instance_user
+        d['pkey'] = paramiko.RSAKey.from_private_key_file(instance_key)
+
+        transport = paramiko.Transport(instance_ip, '22')
+        transport.connect(**d)
+        sftp = paramiko.SFTPClient.from_transport(transport)
+        try:
+            sftp.chdir(remote_path)  # Test if remote_path exists
+        except IOError:
+            sftp.mkdir(remote_path)  # Create remote_path
+            sftp.chdir(remote_path)
+        print sftp.listdir()
+        sftp.put(file_data, remote_filename)
+        sftp.close()
+        return None
+
+
     def run_user_data(self, instance_ip, instance_user, instance_key, user_data):
         # Upload user_data
         remote_path = "/tmp/"
@@ -442,10 +464,16 @@ if __name__ == '__main__':
     print glanceManager.upload_qemu_image(turn_image_name, turn_qemu_img, turn_image_description)
 
     # Upload Repository Image on Glance
+    # Needed only if we want to redeploy everything that was done in NUBOMEDIA
     # print glanceManager.upload_qemu_image(repository_image_name, repository_qemu_img, repository_image_description)
 
     # Upload Controller Image on Glance
     print glanceManager.upload_qemu_image(controller_image_name, controller_qemu_img, controller_image_description)
+
+    # Log time needed to upload NUBOMEDIA Images
+    upload_time = time.time() - start_time
+    print "Time needed for uploading of the NUBOMEDIA images was %s seconds " % upload_time
+    upload_time = time.time()
 
     #######################################
     # Start NUBOMEDIA platform instances
@@ -461,36 +489,59 @@ if __name__ == '__main__':
     instance_turn_ip = novaManager.associate_floating_ip(instance_turn)
     print "TURN instance name=%s , id=%s , public_ip=%s" % (turn_image_name, instance_turn, instance_turn_ip)
 
-    # Start Repository Server instance - is not needed because the NUBOMEDIA consortium is hosting the repository
+    # # Start Repository Server instance - is not needed because the NUBOMEDIA consortium is hosting the repository
     # instance_repository = novaManager.start_kvm_instance(repository_image_name, glanceManager.get_image_id(repository_image_name), novaManager.get_flavor_id(repository_flavor), private_key, repository_user_data)
     # instance_repostory_ip = novaManager.associate_floating_ip(instance_repository)
     # print "Repository instance name=%s , id=%s , public_ip=%s" % (repository_image_name, instance_repository, instance_repostory_ip)
-    # time.sleep(240)
-    # nubomediaManager.run_user_data(instance_repostory_ip, "ubuntu", private_key, repository_user_data)
 
     # Start Controller instance
     instance_controller = novaManager.start_kvm_instance(controller_image_name, glanceManager.get_image_id(controller_image_name), novaManager.get_flavor_id(controller_flavor), private_key, controller_user_data)
     instance_controller_ip = novaManager.associate_floating_ip(instance_controller)
     print "Controller instance name=%s , id=%s , public_ip=%s" % (controller_image_name, instance_controller, instance_controller_ip)
 
+    # Log time needed to boot NUBOMEDIA instances
+    boot_time = time.time() - upload_time
+    print "Time needed to start the NUBOMEDIA instances was %s seconds " % boot_time
+    boot_time = time.time()
+
     ##########################################
-    # Configure  NUBOMEDIA services
+    # Configure  NUBOMEDIA platform services
     ##########################################
 
     # Added a delay before running the configuration scripts on the instances in order to allow them to be properly provisioned and booted
     time.sleep(240)
 
+    # Configure the Monitoring instance
     nubomediaManager.run_user_data(instance_monitoring_ip, "ubuntu", private_key, monitoring_user_data)
 
+    # Configure the TURN server instance
     nubomediaManager.run_user_data(instance_turn_ip, "ubuntu", private_key, turn_user_data)
 
+    # # Configure repository server
+    # nubomediaManager.run_user_data(instance_repostory_ip, "ubuntu", private_key, repository_user_data)
+
+    # Configuring the Controller instance
+    # Upload the OpenShift Keystore first
+    nubomediaManager.upload_file('80.96.122.79', 'ubuntu', private_key, openshift_keystore, 'openshift_keystore', '/tmp/')
+
+    # Configure the NUBOMEDIA controller
     nubomediaManager.run_user_data(instance_controller_ip, "ubuntu", private_key, controller_user_data)
+
+    # # Do the VNFM provisioning using the API
+    # url = 'http://%s:8080/document/record/_search?pretty=true' % instance_controller_ip
+    # data = '{"query":{"bool":{"must":[{"text":{"record.document":"SOME_JOURNAL"}},{"text":{"record.articleTitle":"farmers"}}],"must_not":[],"should":[]}},"from":0,"size":50,"sort":[],"facets":{}}'
+    # response = requests.get(url, data=data)
+
+    # Log time needed to boot NUBOMEDIA instances
+    cfg_time = time.time() - boot_time
+    print "Time needed to configure the NUBOMEDIA platform was %s seconds " % cfg_time
 
     elapsed_time = time.time() - start_time
     print "Total time needed for deployment of the NUBOMEDIA platform was %s seconds " % elapsed_time
 
     # Exit
     sys.exit(0)
+
 
 
 
