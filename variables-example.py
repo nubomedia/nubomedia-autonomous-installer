@@ -6,6 +6,7 @@
 enabled_logging = True
 
 # Keystone
+iaas_ip = 'x.x.x.x'
 auth_url = 'http://x.x.x.x:5000/v2.0'
 username = 'admin'
 password = 'pass'
@@ -24,4 +25,5 @@ master_key = 'master_id_rsa'
 floating_ip_pool = 'external'
 private_key = 'private_key_for_accesssing_instances'
 openshift_ip = 'x.x.x.x'
+# OpenShift Keystore that should be generated using the Portacle tool from http://portecle.sourceforge.net/
 openshift_keystore = 'openshift-keystore'

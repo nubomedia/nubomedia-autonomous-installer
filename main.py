@@ -27,6 +27,7 @@ import os
 import tempfile
 import logging
 import sys
+import urllib2
 import requests
 
 class StreamToLogger(object):
@@ -193,6 +194,7 @@ class NovaManager(object):
         return fip
 
     def start_kvm_instance(self, instance_name, image_id, flavor, private_key, user_data):
+        boot_start_time = time.time()
         instance = self.nova.servers.create(instance_name,
             image_id,
             flavor,
@@ -218,8 +220,10 @@ class NovaManager(object):
             for instance_temp in instances:
                 if instance_temp.id == instance.id:
                     status = instance_temp.status
-            print "Instance %s status is %s" % (instance_name, instance.status)
+            print "Instance %s status is %s" % (instance_name, status)
             time.sleep(10)
+        boot_time = time.time() - boot_start_time
+        print "Instance %s has been booted in %s seconds" % (instance_name, boot_time)
         return instance.id
 
     def get_flavor_id(self, flavor_name):
@@ -253,6 +257,7 @@ class GlanceManager(object):
         print kc_args
 
         self.glclient = glanceClient('1', **kc_args)
+        self.glclient2 = glanceClient('2', **kc_args)
         self.dockerimages = []
 
     def get_docker_images(self):
@@ -265,6 +270,7 @@ class GlanceManager(object):
         return self.dockerimages
 
     def upload_qemu_image(self, image_name, image_location, *image_description):
+        upload_start_time = time.time()
         image = self.glclient.images.create(name=image_name, container_format='bare', disk_format='qcow2')
         print image.status
         image.update(data=open(image_location, 'rb'))
@@ -277,10 +283,27 @@ class GlanceManager(object):
         with open(image_location, 'wb') as f:
             for chunk in image.data():
                 f.write(chunk)
-        print "Image %s has been uploaded" % image_name
+        img_upload_time = time.time() - upload_start_time
+        print "Image %s has been uploaded in %s seconds." % (image_name, img_upload_time)
+        return image.status
+
+    def upload_remote_image(self, image_name, image_location, *image_description):
+        upload_start_time = time.time()
+        image = self.glclient.images.create(disk_format='qcow2', container_format='bare', name=image_name, copy_from=image_location)
+        status = "queued"
+        while status != "active":
+            images = self.glclient.images.list()
+            for images_temp in images:
+                if images_temp.id == image.id:
+                    status = images_temp.status
+            print "Image %s status is %s" % (image_name, status)
+            time.sleep(10)
+        img_upload_time = time.time() - upload_start_time
+        print "Image %s has been uploaded in %s seconds." % (image_name, img_upload_time)
         return image.status
 
     def upload_docker_image(self, docker_img_name, *docker_image_description):
+        upload_start_time = time.time()
         image = self.glclient.images.create(name=docker_img_name, container_format='docker', disk_format='raw')
         print image.status
         image.update(data=open('/dev/null', 'rb'))
@@ -293,6 +316,8 @@ class GlanceManager(object):
         with open('/dev/null', 'wb') as f:
             for chunk in image.data():
                 f.write(chunk)
+        img_upload_time = time.time() - upload_start_time
+        print "Image %s has been uploaded in %s seconds." % (docker_img_name, img_upload_time)
         return image.status
 
     def get_image_id(self, image_name):
@@ -345,6 +370,34 @@ class OpenStackManager(object):
 class NubomediaManager(object):
     def __init__(self, **kwargs):
         print None
+
+    def download_images(self, remote_location, local_location):
+        url = remote_location
+
+        # file_name = url.split('/')[-1]
+        file_name = local_location
+
+        u = urllib2.urlopen(url)
+        f = open(file_name, 'wb')
+        meta = u.info()
+        file_size = int(meta.getheaders("Content-Length")[0])
+        print "Downloading: %s Bytes: %s" % (file_name, file_size)
+
+        file_size_dl = 0
+        block_sz = 8192
+        while True:
+            buffer = u.read(block_sz)
+            if not buffer:
+                break
+
+            file_size_dl += len(buffer)
+            f.write(buffer)
+            status = r"%10d  [%3.2f%%]" % (file_size_dl, file_size_dl * 100. / file_size)
+            status = status + chr(8)*(len(status)+1)
+            print status,
+
+        f.close()
+        return None
 
     def upload_file(self, instance_ip, instance_user, instance_key, file_data, remote_filename, remote_path):
         # Upload file
@@ -451,24 +504,51 @@ if __name__ == '__main__':
     # Upload NUBOMEDIA Images
     ###########################
 
-    # Upload Kurento Media Server KVM Image on Glance
-    print glanceManager.upload_qemu_image(kms_image_name, kms_qemu_img, kms_image_description)
+    if download_images:
+        # Download all images from the NUBOMEDIA repository
+        nubomediaManager.download_images(kms_remote_img, kms_qemu_img)
+        nubomediaManager.download_images(monitoring_remote_img, monitoring_qemu_img)
+        nubomediaManager.download_images(controller_remote_img, controller_qemu_img)
+        nubomediaManager.download_images(turn_remote_img, turn_remote_img)
 
-    # Upload Kurento Media Server Docker Image on Glance
-    print glanceManager.upload_docker_image(kms_docker_img, kms_docker_image_description)
+        # Upload Kurento Media Server KVM Image on Glance
+        glanceManager.upload_qemu_image(kms_image_name, kms_qemu_img, kms_image_description)
 
-    # Upload Monitoring machine Image on Glance
-    print glanceManager.upload_qemu_image(monitoring_image_name, monitoring_qemu_img, monitoring_image_description)
+        # Upload Kurento Media Server Docker Image on Glance
+        glanceManager.upload_docker_image(kms_docker_img, kms_docker_image_description)
 
-    # Upload TURN Server Image on Glance
-    print glanceManager.upload_qemu_image(turn_image_name, turn_qemu_img, turn_image_description)
+        # Upload Monitoring machine Image on Glance
+        glanceManager.upload_qemu_image(monitoring_image_name, monitoring_qemu_img, monitoring_image_description)
 
-    # Upload Repository Image on Glance
-    # Needed only if we want to redeploy everything that was done in NUBOMEDIA
-    # print glanceManager.upload_qemu_image(repository_image_name, repository_qemu_img, repository_image_description)
+        # Upload TURN Server Image on Glance
+        glanceManager.upload_qemu_image(turn_image_name, turn_qemu_img, turn_image_description)
 
-    # Upload Controller Image on Glance
-    print glanceManager.upload_qemu_image(controller_image_name, controller_qemu_img, controller_image_description)
+        # Upload Repository Image on Glance
+        # Needed only if we want to redeploy everything that was done in NUBOMEDIA
+        # glanceManager.upload_qemu_image(repository_image_name, repository_qemu_img, repository_image_description)
+
+        # Upload Controller Image on Glance
+        glanceManager.upload_qemu_image(controller_image_name, controller_qemu_img, controller_image_description)
+    else:
+        # Upload images directly from the repository instead of downloading them locally and then uploading them
+        # Upload Kurento Media Server KVM Image on Glance
+        glanceManager.upload_remote_image(kms_image_name, kms_remote_img, kms_image_description)
+
+        # Upload Kurento Media Server Docker Image on Glance
+        glanceManager.upload_docker_image(kms_docker_img, kms_docker_image_description)
+
+        # Upload Monitoring machine Image on Glance
+        glanceManager.upload_remote_image(monitoring_image_name, monitoring_remote_img, monitoring_image_description)
+
+        # Upload TURN Server Image on Glance
+        glanceManager.upload_remote_image(turn_image_name, turn_remote_img, turn_image_description)
+
+        # Upload Repository Image on Glance
+        # Needed only if we want to redeploy everything that was done in NUBOMEDIA
+        # glanceManager.upload_remote_image(repository_image_name, repository_remote_img, repository_image_description)
+
+        # Upload Controller Image on Glance
+        glanceManager.upload_remote_image(controller_image_name, controller_remote_img, controller_image_description)
 
     # Log time needed to upload NUBOMEDIA Images
     upload_time = time.time() - start_time
