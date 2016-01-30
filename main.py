@@ -52,7 +52,7 @@ logging.basicConfig(
 
 if enabled_logging:
     stdout_logger = logging.getLogger('STDOUT')
-    sl = StreamToLogger(stdout_logger, logging.INFO)
+    sl = StreamToLogger(stdout_logger, logging.WARNING)
     sys.stdout = sl
 
     stderr_logger = logging.getLogger('STDERR')
@@ -580,7 +580,7 @@ if __name__ == '__main__':
     print "Controller instance name=%s , id=%s , public_ip=%s" % (controller_image_name, instance_controller, instance_controller_ip)
 
     # Log time needed to boot NUBOMEDIA instances
-    upload_time = 0
+
     boot_time = time.time() - upload_time
     print "Time needed to start the NUBOMEDIA instances was %s seconds " % boot_time
     boot_time = time.time()
@@ -593,7 +593,7 @@ if __name__ == '__main__':
     time.sleep(240)
 
     # Configure the Monitoring instance
-    nubomediaManager.run_user_data(instance_monitoring_ip, "ubuntu", private_key, monitoring_user_data)
+    # nubomediaManager.run_user_data(instance_monitoring_ip, "ubuntu", private_key, monitoring_user_data)
 
     # Configure the TURN server instance
     nubomediaManager.run_user_data(instance_turn_ip, "ubuntu", private_key, turn_user_data)
