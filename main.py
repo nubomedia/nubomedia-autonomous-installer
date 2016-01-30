@@ -190,7 +190,7 @@ class NovaManager(object):
             else:
                 fip = self.nova.floating_ips.create(get_env_vars()['floating_ip_pool'])
                 self.nova.servers.find(id=instance_id).add_floating_ip(fip)
-                return fip
+                return fip.ip
         return fip
 
     def start_kvm_instance(self, instance_name, image_id, flavor, private_key, user_data):
@@ -580,6 +580,7 @@ if __name__ == '__main__':
     print "Controller instance name=%s , id=%s , public_ip=%s" % (controller_image_name, instance_controller, instance_controller_ip)
 
     # Log time needed to boot NUBOMEDIA instances
+    upload_time = 0
     boot_time = time.time() - upload_time
     print "Time needed to start the NUBOMEDIA instances was %s seconds " % boot_time
     boot_time = time.time()
@@ -602,7 +603,7 @@ if __name__ == '__main__':
 
     # Configuring the Controller instance
     # Upload the OpenShift Keystore first
-    nubomediaManager.upload_file('80.96.122.79', 'ubuntu', private_key, openshift_keystore, 'openshift_keystore', '/tmp/')
+    nubomediaManager.upload_file(instance_controller_ip, 'ubuntu', private_key, openshift_keystore, 'openshift_keystore', '/tmp/')
 
     # Configure the NUBOMEDIA controller
     nubomediaManager.run_user_data(instance_controller_ip, "ubuntu", private_key, controller_user_data)
