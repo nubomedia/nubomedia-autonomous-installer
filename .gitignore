@@ -2,6 +2,7 @@
 variables.py
 hypervisor_id_rsa
 Alins-MacBook-Pro
+openshift-keystore
 *.pyc
 resources/images/*.qcow2
 
