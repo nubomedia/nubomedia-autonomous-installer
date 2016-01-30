@@ -73,7 +73,7 @@ reboot
 
 # NUBOMEDIA TURN Server machine - qemu image for KVM
 turn_qemu_img = 'resources/images/turn_server.qcow2'
-turn_image_name = 'nubomedia-turn-test2-30-01'
+turn_image_name = 'nubomedia-turn'
 turn_image_description = 'Please login with ubuntu user and your private_key'
 turn_flavor = 'm1.small'
 turn_user_data = ''
