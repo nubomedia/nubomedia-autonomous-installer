@@ -232,7 +232,7 @@ class NovaManager(object):
             x = getattr(i,"name")
             if x == flavor_name:
                 flavorid = getattr(i, "id")
-        print "Flavor %s with id %s" % (flavor_name,flavorid)
+        print "Flavor %s with id %s" % (flavor_name, flavorid)
         return flavorid
 
     def get_security_group_id(self, security_group):
@@ -523,6 +523,9 @@ if __name__ == '__main__':
         # Upload TURN Server Image on Glance
         glanceManager.upload_qemu_image(turn_image_name, turn_qemu_img, turn_image_description)
 
+        # Upload Cloud Repository Image on Glance
+        glanceManager.upload_qemu_image(cloud_repository_image_name, cloud_repository_qemu_img, cloud_repository_image_description)
+
         # Upload Repository Image on Glance
         # Needed only if we want to redeploy everything that was done in NUBOMEDIA
         # glanceManager.upload_qemu_image(repository_image_name, repository_qemu_img, repository_image_description)
@@ -542,6 +545,9 @@ if __name__ == '__main__':
 
         # Upload TURN Server Image on Glance
         glanceManager.upload_remote_image(turn_image_name, turn_remote_img, turn_image_description)
+
+        # Upload Cloud Repository Image on Glance
+        glanceManager.upload_remote_image(cloud_repository_image_name, cloud_repository_remote_img, cloud_repository_image_description)
 
         # Upload Repository Image on Glance
         # Needed only if we want to redeploy everything that was done in NUBOMEDIA
@@ -593,7 +599,7 @@ if __name__ == '__main__':
     time.sleep(240)
 
     # Configure the Monitoring instance
-    # nubomediaManager.run_user_data(instance_monitoring_ip, "ubuntu", private_key, monitoring_user_data)
+    nubomediaManager.run_user_data(instance_monitoring_ip, "ubuntu", private_key, monitoring_user_data)
 
     # Configure the TURN server instance
     nubomediaManager.run_user_data(instance_turn_ip, "ubuntu", private_key, turn_user_data)

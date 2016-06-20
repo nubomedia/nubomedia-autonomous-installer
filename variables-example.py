@@ -27,3 +27,4 @@ private_key = 'private_key_for_accesssing_instances'
 openshift_ip = 'x.x.x.x'
 # OpenShift Keystore that should be generated using the Portacle tool from http://portecle.sourceforge.net/
 openshift_keystore = 'openshift-keystore'
+openshift_domain = 'apps.nubomedia-paas.eu'

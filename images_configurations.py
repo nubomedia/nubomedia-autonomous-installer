@@ -7,6 +7,7 @@ turn_remote_img = 'http://repository.nubomedia.eu/images/turn_server.qcow2'
 monitoring_remote_img = 'http://repository.nubomedia.eu/images/nubomedia_monitoring.qcow2'
 controller_remote_img = 'http://repository.nubomedia.eu/images/nubomedia_controller.qcow2'
 repository_remote_img = 'http://repository.nubomedia.eu/images/nubomedia_repository.qcow2'
+cloud_repository_remote_img = 'http://repository.nubomedia.eu/images/cloud_repository.qcow2'
 
 
 # NUBOMEDIA Kurento Media Server - qemu image for KVM
@@ -85,6 +86,13 @@ repository_image_description = 'Please login with ubuntu user and your private_k
 repository_flavor = 'm1.medium'
 repository_user_data = ''
 
+# NUBOMEDIA Cloud Repository image - qemu image for KVM
+cloud_repository_qemu_img = 'resources/images/nubomedia_cloud_repository.qcow2'
+cloud_repository_image_name = 'cloud-repository'
+cloud_repository_image_description = 'Please login with ubuntu user and your private_key'
+cloud_repository_flavor = 'm1.medium'
+cloud_repository_user_data = ''
+
 # NUBOMEDIA Conroller machine - qemu image for KVM
 controller_qemu_img = 'resources/images/nubomedia_controller.qcow2'
 controller_image_name = 'nubomedia-controller'
@@ -104,9 +112,17 @@ LOCAL_IP=$(curl http://169.254.169.254/latest/meta-data/local-ipv4)
 rm -rf /opt/nubomedia/nubomedia-paas/resource/openshift-keystore
 cp /tmp/openshift-keystore /opt/nubomedia/nubomedia-paas/resource/openshift-keystore
 
+# Setup configuration files
+mv /etc/openbaton/openbaton.properties.example /etc/openbaton/openbaton.properties
+mv /etc/nubomedia/msvnfm.properties.example /etc/nubomedia/msvnfm.properties
+mv /etc/nubomedia/paas.properties.example /etc/nubomedia/paas.properties
+
 # Configure OpenBaton public IP
 PUBLIC_IP="PUBLIC_IP"
 sed -i "s/${PUBLIC_IP}/${EXTERNAL_IP}/g" /etc/openbaton/openbaton.properties
+
+# Configure MSVNFM public IP
+sed -i "s/${PUBLIC_IP}/${EXTERNAL_IP}/g" /etc/nubomedia/msvnfm.properties
 
 # Configure PaaS manager
 PUBLIC_IP="PUBLIC_IP"
@@ -116,6 +132,7 @@ OPENSTACK_USERNAME_DEFAULT="OPENSTACK_USERNAME"
 OPENSTACK_PASSWORD_DEFAULT="OPENSTACK_PASSWORD"
 OPENSTACK_KEY_PAIR_DEFAULT="OPENSTACK_KEY_PAIR"
 OPENSTACK_TENANT_DEFAULT="OPENSTACK_TENANT"
+OPENSHIFT_DOMAIN_DEFAULT="OPENSHIFT_DOMAIN"
 
 OPENSHIFT_IP=%s
 OPENSTACK_IP=%s
@@ -124,6 +141,7 @@ OPENSTACK_PASSWORD=%s
 
 OPENSTACK_KEY_PAIR=%s
 OPENSTACK_USERNAME=%s
+OPENSHIFT_DOMAIN=%s
 
 sed -i "s/${PUBLIC_IP}/${EXTERNAL_IP}/g" /etc/nubomedia/paas.properties
 sed -i "s/${OPENSHIFT_IP_DEFAULT}/${OPENSHIFT_IP}/g" /etc/nubomedia/paas.properties
@@ -132,13 +150,16 @@ sed -i "s/${OPENSTACK_USERNAME_DEFAULT}/${OPENSTACK_USERNAME}/g" /etc/nubomedia/
 sed -i "s/${OPENSTACK_PASSWORD_DEFAULT}/${OPENSTACK_PASSWORD}/g" /etc/nubomedia/paas.properties
 sed -i "s/${OPENSTACK_TENANT_DEFAULT}/${OPENSTACK_TENANT}/g" /etc/nubomedia/paas.properties
 sed -i "s/${OPENSTACK_KEY_PAIR_DEFAULT}/${OPENSTACK_KEY_PAIR}/g" /etc/nubomedia/paas.properties
+sed -i "s/${OPENSHIFT_DOMAIN_DEFAULT}/${OPENSHIFT_DOMAIN}/g" /etc/nubomedia/paas.properties
 
-# cd /opt/openbaton/nfvo && ./openbaton.sh start
-# sleep 40
-# cd /opt/nubomedia/ms-vnfm && ./ms-vnfm.sh
-# sleep 40
-# cd /opt/nubomedia/nubomedia-paas && ./nubomedia-paas.sh start
+cd /opt/openbaton/nfvo && ./openbaton.sh clean compile start
+sleep 40
+cd /opt/openbaton/generic-vnfm && ./generic-vnfm.sh clean compile start
+sleep 40
+cd /opt/nubomedia/ms-vnfm && ./ms-vnfm.sh clean compile start
+sleep 40
+cd /opt/nubomedia/nubomedia-paas && ./nubomedia-paas.sh clean compile start
 
 ## Other installation instructions that should be done on the web interfaces by the deployment administrator ##
 # Should put the PoP configuration first, then MS-NSD, and after that NSD.
-""" % (openshift_ip, iaas_ip, tenant_name, password, private_key, username)
+""" % (openshift_ip, iaas_ip, tenant_name, password, private_key, username, openshift_domain)
