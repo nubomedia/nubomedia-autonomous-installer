@@ -19,8 +19,8 @@ from glanceclient import Client as glanceClient
 from keystoneclient import session as keystoneSession
 from novaclient import client as novaClient
 from cinderclient import client as cinderClient
-from credentials import *
 from contextlib import contextmanager
+from credentials import *
 import paramiko
 import time
 import os
@@ -29,6 +29,7 @@ import logging
 import sys
 import urllib2
 import requests
+from cmd import Cmd
 
 class StreamToLogger(object):
    """
@@ -289,7 +290,8 @@ class GlanceManager(object):
 
     def upload_remote_image(self, image_name, image_location, *image_description):
         upload_start_time = time.time()
-        image = self.glclient.images.create(disk_format='qcow2', container_format='bare', name=image_name, copy_from=image_location)
+        image = self.glclient.images.create(disk_format='qcow2', container_format='bare', name=image_name,
+                                            copy_from=image_location)
         status = "queued"
         while status != "active":
             images = self.glclient.images.list()
@@ -453,11 +455,14 @@ class NubomediaManager(object):
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         ssh.connect(instance_ip, **d)
-        ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command("sudo -- sh -c 'chmod +x /tmp/nubomedia_run_script.sh && cd /tmp && ./nubomedia_run_script.sh'")
+        ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command("sudo -- sh -c 'chmod +x /tmp/nubomedia_run_script.sh && "
+                                                             "cd /tmp && ./nubomedia_run_script.sh'")
         print ssh_stdout.readlines()
         return None
 
-if __name__ == '__main__':
+
+def autoinstall():
+
     # Connect to Keystone
     kwargs = {}
     kwargs = get_keystone_creds()
@@ -481,17 +486,8 @@ if __name__ == '__main__':
     cinderManager = CinderManager(**kwargs)
     cinderManager.get_volumes_list()
 
-    # Create and attach a volume example
-    #instance_controller = novaManager.start_kvm_instance(controller_image_name, glanceManager.get_image_id(controller_image_name), novaManager.get_flavor_id(controller_flavor), private_key, controller_user_data)
-    #test = cinderManager.create_volume("test2", 10)
-    #cinderManager.attach_volume(test, instance_controller, '/dev/vdb')
-
-
-    # Pull all docker images on all docker compute nodes, requires OpenStack admin user
-    # openStackManager.pull_docker_images()
-
     # Create a floating IP if there is no floating IP on that tenant
-    # print novaManager.create_floating_ip()
+    print novaManager.create_floating_ip()
 
     ##############################
     # Start NUBOMEDIA deployment
@@ -504,57 +500,22 @@ if __name__ == '__main__':
     # Upload NUBOMEDIA Images
     ###########################
 
-    if download_images:
-        # Download all images from the NUBOMEDIA repository
-        nubomediaManager.download_images(kms_remote_img, kms_qemu_img)
-        nubomediaManager.download_images(monitoring_remote_img, monitoring_qemu_img)
-        nubomediaManager.download_images(controller_remote_img, controller_qemu_img)
-        nubomediaManager.download_images(turn_remote_img, turn_remote_img)
+    # Upload Kurento Media Server Docker Image on Glance
+    glanceManager.upload_docker_image(kms_docker_img, kms_docker_image_description)
 
-        # Upload Kurento Media Server KVM Image on Glance
-        glanceManager.upload_qemu_image(kms_image_name, kms_qemu_img, kms_image_description)
+    # Upload Monitoring machine Image on Glance
+    glanceManager.upload_remote_image(monitoring_image_name, monitoring_remote_img, monitoring_image_description)
 
-        # Upload Kurento Media Server Docker Image on Glance
-        glanceManager.upload_docker_image(kms_docker_img, kms_docker_image_description)
+    # Upload TURN Server Image on Glance
+    glanceManager.upload_remote_image(turn_image_name, turn_remote_img, turn_image_description)
 
-        # Upload Monitoring machine Image on Glance
-        glanceManager.upload_qemu_image(monitoring_image_name, monitoring_qemu_img, monitoring_image_description)
+    # Upload Cloud Repository Image on Glance
+    glanceManager.upload_remote_image(cloud_repository_image_name,
+                                      cloud_repository_remote_img,
+                                      cloud_repository_image_description)
 
-        # Upload TURN Server Image on Glance
-        glanceManager.upload_qemu_image(turn_image_name, turn_qemu_img, turn_image_description)
-
-        # Upload Cloud Repository Image on Glance
-        glanceManager.upload_qemu_image(cloud_repository_image_name, cloud_repository_qemu_img, cloud_repository_image_description)
-
-        # Upload Repository Image on Glance
-        # Needed only if we want to redeploy everything that was done in NUBOMEDIA
-        # glanceManager.upload_qemu_image(repository_image_name, repository_qemu_img, repository_image_description)
-
-        # Upload Controller Image on Glance
-        glanceManager.upload_qemu_image(controller_image_name, controller_qemu_img, controller_image_description)
-    else:
-        # Upload images directly from the repository instead of downloading them locally and then uploading them
-        # Upload Kurento Media Server KVM Image on Glance
-        glanceManager.upload_remote_image(kms_image_name, kms_remote_img, kms_image_description)
-
-        # Upload Kurento Media Server Docker Image on Glance
-        glanceManager.upload_docker_image(kms_docker_img, kms_docker_image_description)
-
-        # Upload Monitoring machine Image on Glance
-        glanceManager.upload_remote_image(monitoring_image_name, monitoring_remote_img, monitoring_image_description)
-
-        # Upload TURN Server Image on Glance
-        glanceManager.upload_remote_image(turn_image_name, turn_remote_img, turn_image_description)
-
-        # Upload Cloud Repository Image on Glance
-        glanceManager.upload_remote_image(cloud_repository_image_name, cloud_repository_remote_img, cloud_repository_image_description)
-
-        # Upload Repository Image on Glance
-        # Needed only if we want to redeploy everything that was done in NUBOMEDIA
-        # glanceManager.upload_remote_image(repository_image_name, repository_remote_img, repository_image_description)
-
-        # Upload Controller Image on Glance
-        glanceManager.upload_remote_image(controller_image_name, controller_remote_img, controller_image_description)
+    # Upload Controller Image on Glance
+    glanceManager.upload_remote_image(controller_image_name, controller_remote_img, controller_image_description)
 
     # Log time needed to upload NUBOMEDIA Images
     upload_time = time.time() - start_time
@@ -566,24 +527,37 @@ if __name__ == '__main__':
     #######################################
 
     # Start Monitoring instance
-    instance_monitoring = novaManager.start_kvm_instance(monitoring_image_name, glanceManager.get_image_id(monitoring_image_name), novaManager.get_flavor_id(monitoring_flavor), private_key, monitoring_user_data)
+    instance_monitoring = novaManager.start_kvm_instance(monitoring_image_name,
+                                                         glanceManager.get_image_id(monitoring_image_name),
+                                                         novaManager.get_flavor_id(monitoring_flavor),
+                                                         private_key,
+                                                         monitoring_user_data)
     instance_monitoring_ip = novaManager.associate_floating_ip(instance_monitoring)
-    print "Monitoring instance name=%s , id=%s , public_ip=%s" % (monitoring_image_name, instance_monitoring, instance_monitoring_ip)
+    print "Monitoring instance name=%s , id=%s , public_ip=%s" % (monitoring_image_name,
+                                                                  instance_monitoring,
+                                                                  instance_monitoring_ip)
 
     # Start TURN Server instance
-    instance_turn = novaManager.start_kvm_instance(turn_image_name, glanceManager.get_image_id(turn_image_name), novaManager.get_flavor_id(turn_flavor), private_key, turn_user_data)
+    instance_turn = novaManager.start_kvm_instance(turn_image_name,
+                                                   glanceManager.get_image_id(turn_image_name),
+                                                   novaManager.get_flavor_id(turn_flavor),
+                                                   private_key,
+                                                   turn_user_data)
     instance_turn_ip = novaManager.associate_floating_ip(instance_turn)
-    print "TURN instance name=%s , id=%s , public_ip=%s" % (turn_image_name, instance_turn, instance_turn_ip)
-
-    # # Start Repository Server instance - is not needed because the NUBOMEDIA consortium is hosting the repository
-    # instance_repository = novaManager.start_kvm_instance(repository_image_name, glanceManager.get_image_id(repository_image_name), novaManager.get_flavor_id(repository_flavor), private_key, repository_user_data)
-    # instance_repostory_ip = novaManager.associate_floating_ip(instance_repository)
-    # print "Repository instance name=%s , id=%s , public_ip=%s" % (repository_image_name, instance_repository, instance_repostory_ip)
+    print "TURN instance name=%s , id=%s , public_ip=%s" % (turn_image_name,
+                                                            instance_turn,
+                                                            instance_turn_ip)
 
     # Start Controller instance
-    instance_controller = novaManager.start_kvm_instance(controller_image_name, glanceManager.get_image_id(controller_image_name), novaManager.get_flavor_id(controller_flavor), private_key, controller_user_data)
+    instance_controller = novaManager.start_kvm_instance(controller_image_name,
+                                                         glanceManager.get_image_id(controller_image_name),
+                                                         novaManager.get_flavor_id(controller_flavor),
+                                                         private_key,
+                                                         controller_user_data)
     instance_controller_ip = novaManager.associate_floating_ip(instance_controller)
-    print "Controller instance name=%s , id=%s , public_ip=%s" % (controller_image_name, instance_controller, instance_controller_ip)
+    print "Controller instance name=%s , id=%s , public_ip=%s" % (controller_image_name,
+                                                                  instance_controller,
+                                                                  instance_controller_ip)
 
     # Log time needed to boot NUBOMEDIA instances
 
@@ -595,7 +569,8 @@ if __name__ == '__main__':
     # Configure  NUBOMEDIA platform services
     ##########################################
 
-    # Added a delay before running the configuration scripts on the instances in order to allow them to be properly provisioned and booted
+    # Added a delay before running the configuration scripts on the instances in order to allow them to be
+    # properly provisioned and booted
     time.sleep(240)
 
     # Configure the Monitoring instance
@@ -604,20 +579,17 @@ if __name__ == '__main__':
     # Configure the TURN server instance
     nubomediaManager.run_user_data(instance_turn_ip, "ubuntu", private_key, turn_user_data)
 
-    # # Configure repository server
-    # nubomediaManager.run_user_data(instance_repostory_ip, "ubuntu", private_key, repository_user_data)
-
     # Configuring the Controller instance
     # Upload the OpenShift Keystore first
-    nubomediaManager.upload_file(instance_controller_ip, 'ubuntu', private_key, openshift_keystore, 'openshift_keystore', '/tmp/')
+    nubomediaManager.upload_file(instance_controller_ip,
+                                 'ubuntu',
+                                 private_key,
+                                 openshift_keystore,
+                                 'openshift_keystore',
+                                 '/tmp/')
 
     # Configure the NUBOMEDIA controller
     nubomediaManager.run_user_data(instance_controller_ip, "ubuntu", private_key, controller_user_data)
-
-    # # Do the VNFM provisioning using the API
-    # url = 'http://%s:8080/document/record/_search?pretty=true' % instance_controller_ip
-    # data = '{"query":{"bool":{"must":[{"text":{"record.document":"SOME_JOURNAL"}},{"text":{"record.articleTitle":"farmers"}}],"must_not":[],"should":[]}},"from":0,"size":50,"sort":[],"facets":{}}'
-    # response = requests.get(url, data=data)
 
     # Log time needed to boot NUBOMEDIA instances
     cfg_time = time.time() - boot_time
@@ -625,6 +597,63 @@ if __name__ == '__main__':
 
     elapsed_time = time.time() - start_time
     print "Total time needed for deployment of the NUBOMEDIA platform was %s seconds " % elapsed_time
+
+def manualinstall():
+    iaas_ip = raw_input("Please input the IaaS public IP address : ")
+    auth_url = "http://%s:5000/v2.0" % iaas_ip
+    username = raw_input("Please input the IaaS admin username : ")
+    password = raw_input("Please input the IaaS admin password : ")
+    tenant_name = raw_input("Please input the IaaS Tenant name : ")
+    floating_ip_pool = raw_input("Please input the floating IP pool that must be used for this tenant : ")
+    private_key = raw_input("Please input the public key name that can be used in this tenant : ")
+
+    # Glance
+    glance_endpoint = "http://%s:9292" % iaas_ip
+
+    # Master SSH credentials
+    master_ip = "%s" % iaas_ip
+    master_user = raw_input("Please input the IaaS ssh username : ")
+    master_pass = raw_input("Please input the IaaS ssh password : ")
+    print "test%stest" % master_pass
+    if master_pass == "":
+        master_key = 'hypervisor_id_rsa'
+
+    # Other variables
+
+    openshift_ip = raw_input("Please input the OpenShift IP address : ")
+    print "OpenShift Keystore should be generated using the Portacle tool from http://portecle.sourceforge.net/ an" \
+          " added to the root of the repository with the following name: openshift-keystore"
+    openshift_domain = raw_input("Please input the wildcard domain to be used for applications inside OpenShift : ")
+
+
+
+class InstallerCommandPrompt(Cmd):
+
+    def do_auto_install(self, args):
+        """Starts the NUBOMEDIA Autonomous Installer using the configuration available on variables.py file."""
+        print "NUBOMEDIA Platform as a Service installation has been started. Be sure you've configured everything " \
+              "in the variables.py file."
+        autoinstall()
+
+    def do_manual_install(self, args):
+        """
+        Starts the manual installation of the NUBOMEDIA Platform as a Service.
+        You will be prompted to input configuration information like OpenStack and OpenShift credentials,
+        mysql passwords, etc."""
+        print "Manual Installation of the NUBOMEDIA Platform as a Service has been started."
+        manualinstall()
+
+    def do_quit(self, args):
+        """Quits the program."""
+        print "Quitting."
+        raise SystemExit
+
+
+if __name__ == '__main__':
+
+    prompt = InstallerCommandPrompt()
+    prompt.prompt = '> '
+    prompt.cmdloop('Starting prompt of NUBOMEDIA Autonomous installer...')
 
     # Exit
     sys.exit(0)
