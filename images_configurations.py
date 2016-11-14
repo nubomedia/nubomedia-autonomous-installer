@@ -2,7 +2,7 @@ from variables import *
 
 # NUBOMEDIA platform images
 download_images = False
-kms_remote_img = 'http://repository.nubomedia.eu/images/kurento_media_server.qcow2'
+kms_remote_img = 'http://repository.nubomedia.eu/images/kms-6.6.1-KVM.qcow2'
 turn_remote_img = 'http://repository.nubomedia.eu/images/turn_server.qcow2'
 monitoring_remote_img = 'http://repository.nubomedia.eu/images/nubomedia_monitoring.qcow2'
 controller_remote_img = 'http://repository.nubomedia.eu/images/nubomedia_controller.qcow2'
