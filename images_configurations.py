@@ -32,7 +32,7 @@ mv /root/deploy/collectd.conf /etc/collectd/collectd.conf
 
 # Update the configurations
 bash /usr/local/bin/fix.sh
-""" % (NUBOMEDIA_STUNSERVER_ADDRESS, NUBOMEDIA_STUNSERVER_PORT, NUBOMEDIA_TURNSERVER_ADDRESS, NUBOMEDIA_TURNSERVER_ADDRESS, NUBOMEDIA_TURNSERVER_PORT, NUBOMEDIA_MONITORING_IP)
+""" % (NUBOMEDIA_STUNSERVER_ADDRESS, NUBOMEDIA_STUNSERVER_PORT, NUBOMEDIA_TURNSERVER_ADDRESS, NUBOMEDIA_TURNSERVER_PORT, instance_monitoring_ip)
 
 # NUBOMEDIA Kurento Media Server Docker image for - Docker
 kms_docker_img = 'nubomedia/kurento-media-server'
