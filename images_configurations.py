@@ -11,25 +11,27 @@ cloud_repository_remote_img = 'http://repository.nubomedia.eu/images/cloud_repos
 
 
 # NUBOMEDIA Kurento Media Server - qemu image for KVM
-kms_qemu_img = 'resources/images/kurento_media_server.qcow2'
+kms_qemu_img = 'resources/images/kms-6.6.1-KVM.qcow2'
 kms_image_name = 'kurento-media-server'
 kms_image_description = 'Kurento Media Server image for KVM hypervisor'
 kms_qemu_flavor = 'm1.medium'
 kms_qemu_user_data = """#!/bin/bash
 ### KURENTO MEDIA SERVER CONFIGURATION ###
-INSTANCE_NAME=$(curl http://169.254.169.254/latest/meta-data/hostname)
-instance_name_simple=${INSTANCE_NAME::-10}
-sed -i " 1 s/.*/& $instance_name_simple/" /etc/hosts
+mkdir -p /opt/
+echo export NUBOMEDIASTUNSERVERADDRESS=80.96.122.61 > /opt/envvars
+echo export NUBOMEDIASTUNSERVERPORT=3478 >> /opt/envvars
+echo export NUBOMEDIATURNSERVERADDRESS=80.96.122.61 >> /opt/envvars
+echo export NUBOMEDIATURNSERVERPORT=3478 >> /opt/envvars
+echo export NUBOMEDIAMONITORINGIP=80.96.122.69 >> /opt/envvars
 
-EXTERNAL_IP=$(curl http://169.254.169.254/latest/meta-data/public-ipv4)
-PUBLIC_IP="PUBLIC_IP"
-LOCAL_IP=$(curl http://169.254.169.254/latest/meta-data/local-ipv4)
-LOCAL_IP_TEMPLATE="LOCAL_IP"
-HOST_TEMPLATE="HOSTNAMEMONITORING"
+cd /root/deploy && git pull origin master
+mv /root/deploy/WebRtcEndpoint.conf.ini /etc/kurento/modules/kurento/WebRtcEndpoint.conf.ini
+mv /root/deploy/fix.sh /usr/local/bin/
+mv /root/deploy/logstash-forwarder.conf /etc/logstash-forwarder.conf
+mv /root/deploy/collectd.conf /etc/collectd/collectd.conf
 
-sed -i -e "s/$HOST_TEMPLATE/$INSTANCE_NAME/g" /etc/collectd/collectd.conf
-sed -i "s/${LOCAL_IP_TEMPLATE}/${LOCAL_IP}/g" /etc/collectd/collectd.conf
-service collectd restart
+# Update the configurations
+bash /usr/local/bin/fix.sh
 """
 
 # NUBOMEDIA Kurento Media Server Docker image for - Docker
