@@ -18,11 +18,11 @@ kms_qemu_flavor = 'm1.medium'
 kms_qemu_user_data = """#!/bin/bash
 ### KURENTO MEDIA SERVER CONFIGURATION ###
 mkdir -p /opt/
-echo export NUBOMEDIASTUNSERVERADDRESS=80.96.122.61 > /opt/envvars
-echo export NUBOMEDIASTUNSERVERPORT=3478 >> /opt/envvars
-echo export NUBOMEDIATURNSERVERADDRESS=80.96.122.61 >> /opt/envvars
-echo export NUBOMEDIATURNSERVERPORT=3478 >> /opt/envvars
-echo export NUBOMEDIAMONITORINGIP=80.96.122.69 >> /opt/envvars
+echo export NUBOMEDIASTUNSERVERADDRESS=%s > /opt/envvars
+echo export NUBOMEDIASTUNSERVERPORT=%s >> /opt/envvars
+echo export NUBOMEDIATURNSERVERADDRESS=%s >> /opt/envvars
+echo export NUBOMEDIATURNSERVERPORT=%s >> /opt/envvars
+echo export NUBOMEDIAMONITORINGIP=%s >> /opt/envvars
 
 cd /root/deploy && git pull origin master
 mv /root/deploy/WebRtcEndpoint.conf.ini /etc/kurento/modules/kurento/WebRtcEndpoint.conf.ini
@@ -32,7 +32,7 @@ mv /root/deploy/collectd.conf /etc/collectd/collectd.conf
 
 # Update the configurations
 bash /usr/local/bin/fix.sh
-"""
+""" % (NUBOMEDIA_STUNSERVER_ADDRESS, NUBOMEDIA_STUNSERVER_PORT, NUBOMEDIA_TURNSERVER_ADDRESS, NUBOMEDIA_TURNSERVER_ADDRESS, NUBOMEDIA_TURNSERVER_PORT, NUBOMEDIA_MONITORING_IP)
 
 # NUBOMEDIA Kurento Media Server Docker image for - Docker
 kms_docker_img = 'nubomedia/kurento-media-server'
