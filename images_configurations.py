@@ -59,6 +59,7 @@ HOST_TEMPLATE="HOSTNAMEMONITORING"
 
 sed -i "s/${HOST_TEMPLATE}/${instance_name_simple}/g" /etc/collectd/collectd.conf
 sed -i "s/${PUBLIC_IP}/${EXTERNAL_IP}/g" /etc/logstash-forwarder.conf
+sed -i "s/${PUBLIC_IP}/${EXTERNAL_IP}/g" /etc/ssl/openssl.cnf
 sed -i "s/${PUBLIC_IP}/${EXTERNAL_IP}/g" /etc/icinga2/features-enabled/graphite.conf
 
 # Format the new attached disk for storing the metrics
