@@ -1,0 +1,1 @@
+In this directory the autonomous installer will download all the necessary images.
