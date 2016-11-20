@@ -30,3 +30,4 @@ openshift_keystore = 'openshift-keystore'
 openshift_domain = 'apps.nubomedia-paas.eu'
 
 nubomedia_admin_paas = 'nubomediapaas'
+use_kurento_on_docker = False

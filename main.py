@@ -481,9 +481,10 @@ def autoinstall():
     openStackManager = OpenStackManager()
     nubomediaManager = NubomediaManager()
 
-    # Connect to Cinder
+    # Connect to Cinder and create disk
     cinderManager = CinderManager(**kwargs)
     cinderManager.get_volumes_list()
+    monitoring_disk = cinderManager.create_volume("monitoring_disk", 10)
 
     # Create a floating IP if there is no floating IP on that tenant
     print novaManager.create_floating_ip()
@@ -521,13 +522,15 @@ def autoinstall():
     ####################################
     # Upload NUBOMEDIA Images if needed
     ####################################
-
+    kms_image = kms_image_name
     if upload_images:
-        # Upload Kurento Media Server Docker Image on Glance
-        glanceManager.upload_docker_image(kms_docker_img, kms_docker_image_description)
-
-        # Upload Kurento Media Server KVM Image on Glance
-        glanceManager.upload_docker_image(kms_image_name, kms_image_description)
+        # Upload Kurento Media Server on KVM or Docker depending on what you've chosen on the variables.py file
+        if not use_kurento_on_docker:
+            glanceManager.upload_docker_image(kms_image_name, kms_image_description)
+            kms_image = kms_image_name
+        else:
+            glanceManager.upload_docker_image(kms_docker_img, kms_docker_image_description)
+            kms_image = kms_docker_img
 
         # Upload Monitoring machine Image on Glance
         glanceManager.upload_remote_image(monitoring_image_name, monitoring_remote_img, monitoring_image_description)
@@ -543,10 +546,10 @@ def autoinstall():
         # Upload Controller Image on Glance
         glanceManager.upload_remote_image(controller_image_name, controller_remote_img, controller_image_description)
 
-        # Log time needed to upload NUBOMEDIA Images
-        upload_time = time.time() - start_time
-        print "Time needed for uploading of the NUBOMEDIA images was %s seconds " % upload_time
-        upload_time = time.time()
+    # Log time needed to upload NUBOMEDIA Images
+    upload_time = time.time() - start_time
+    print "Time needed for uploading of the NUBOMEDIA images was %s seconds " % upload_time
+    upload_time = time.time()
 
     #######################################
     # Start NUBOMEDIA platform instances
@@ -557,39 +560,30 @@ def autoinstall():
                                                          glanceManager.get_image_id(monitoring_image_name),
                                                          novaManager.get_flavor_id(monitoring_flavor),
                                                          private_key,
-                                                         monitoring_user_data)
+                                                         '')
     instance_monitoring_ip = novaManager.associate_floating_ip(instance_monitoring)
     print "Monitoring instance name=%s , id=%s , public_ip=%s" % (monitoring_image_name,
                                                                   instance_monitoring,
                                                                   instance_monitoring_ip)
 
     # Start TURN Server instance
-    instance_turn = novaManager.start_kvm_instance(turn_image_name,
-                                                   glanceManager.get_image_id(turn_image_name),
-                                                   novaManager.get_flavor_id(turn_flavor),
-                                                   private_key,
-                                                   turn_user_data)
-    instance_turn_ip = novaManager.associate_floating_ip(instance_turn)
-    print "TURN instance name=%s , id=%s , public_ip=%s" % (turn_image_name,
-                                                            instance_turn,
-                                                            instance_turn_ip)
+    # instance_turn = novaManager.start_kvm_instance(turn_image_name,
+    #                                                glanceManager.get_image_id(turn_image_name),
+    #                                                novaManager.get_flavor_id(turn_flavor),
+    #                                                private_key,
+    #                                                turn_user_data)
+    # instance_turn_ip = novaManager.associate_floating_ip(instance_turn)
+    # print "TURN instance name=%s , id=%s , public_ip=%s" % (turn_image_name,
+    #                                                         instance_turn,
+    #                                                         instance_turn_ip)
+    instance_turn_ip = '80.96.122.61'
 
     # Start Controller instance
     instance_controller = novaManager.start_kvm_instance(controller_image_name,
                                                          glanceManager.get_image_id(controller_image_name),
                                                          novaManager.get_flavor_id(controller_flavor),
                                                          private_key,
-                                                         controller_user_data % (openshift_ip,
-                                                                                 openshift_domain,
-                                                                                 iaas_ip,
-                                                                                 username,
-                                                                                 password,
-                                                                                 tenant_name,
-                                                                                 private_key,
-                                                                                 nubomedia_admin_paas,
-                                                                                 instance_monitoring_ip,
-                                                                                 instance_turn_ip,
-                                                                                 instance_turn_ip))
+                                                         '')
     instance_controller_ip = novaManager.associate_floating_ip(instance_controller)
     print "Controller instance name=%s , id=%s , public_ip=%s" % (controller_image_name,
                                                                   instance_controller,
@@ -609,11 +603,15 @@ def autoinstall():
     # properly provisioned and booted
     time.sleep(240)
 
+    cinderManager.attach_volume(monitoring_disk, instance_monitoring, '/dev/vdb')
+
+    # Delay for allowing the volume to get attached to the monitoring instance
+    time.sleep(60)
     # Configure the Monitoring instance
     nubomediaManager.run_user_data(instance_monitoring_ip, "ubuntu", private_key, monitoring_user_data)
 
     # Configure the TURN server instance
-    nubomediaManager.run_user_data(instance_turn_ip, "ubuntu", private_key, turn_user_data)
+    # nubomediaManager.run_user_data(instance_turn_ip, "ubuntu", private_key, turn_user_data)
 
     # Configuring the Controller instance
     # Upload the OpenShift Keystore first
@@ -636,7 +634,8 @@ def autoinstall():
                                                            nubomedia_admin_paas,
                                                            instance_monitoring_ip,
                                                            instance_turn_ip,
-                                                           instance_turn_ip))
+                                                           instance_turn_ip,
+                                                           kms_image))
 
     # Log time needed to boot NUBOMEDIA instances
     cfg_time = time.time() - boot_time

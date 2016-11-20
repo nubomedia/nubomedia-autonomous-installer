@@ -133,11 +133,11 @@ OPENSTACK_USERNAME_DEFAULT="OPENSTACK_USERNAME"
 OPENSTACK_PASSWORD_DEFAULT="OPENSTACK_PASSWORD"
 OPENSTACK_KEY_PAIR_DEFAULT="OPENSTACK_KEY_PAIR"
 OPENSTACK_TENANT_DEFAULT="OPENSTACK_TENANT"
-NUBOMEDIA_DEFAULT_ADMIN_PASS="NUBOMEDIA_DEFAULT_ADMIN_PASS"
-NUBOMEDIA_STUN_SERVER_ADDRESS="NUBOMEDIA_STUN_SERVER_ADDRESS"
-NUBOMEDIA_TURN_SERVER_ADDRESS="NUBOMEDIA_TURN_SERVER_ADDRESS"
-NUBOMEDIA_MONITORING_IP="NUBOMEDIA_MONITORING_IP"
-
+NUBOMEDIA_DEFAULT_ADMIN_PASS_DEFAULT="NUBOMEDIA_DEFAULT_ADMIN_PASS"
+NUBOMEDIA_STUN_SERVER_ADDRESS_DEFAULT="NUBOMEDIA_STUN_SERVER_ADDRESS"
+NUBOMEDIA_TURN_SERVER_ADDRESS_DEFAULT="NUBOMEDIA_TURN_SERVER_ADDRESS"
+NUBOMEDIA_MONITORING_IP_DEFAULT="NUBOMEDIA_MONITORING_IP"
+KURENTO_MEDIA_SERVER_DEFAULT="nubomedia/kurento-media-server-dev"
 
 OPENSHIFT_IP=%s
 OPENSHIFT_DOMAIN=%s
@@ -150,6 +150,7 @@ NUBOMEDIA_DEFAULT_ADMIN_PASS=%s
 MONITORING_IP=%s
 TURN_SERVER_IP=%s
 STUN_SERVER_IP=%s
+KURENTO_MEDIA_SERVER=%s
 
 sed -i "s/${PUBLIC_IP}/${EXTERNAL_IP}/g" /etc/nubomedia/paas.properties
 sed -i "s/${OPENSHIFT_IP_DEFAULT}/${OPENSHIFT_IP}/g" /etc/nubomedia/paas.properties
@@ -160,15 +161,16 @@ sed -i "s/${OPENSTACK_PASSWORD_DEFAULT}/${OPENSTACK_PASSWORD}/g" /etc/nubomedia/
 sed -i "s/${OPENSTACK_TENANT_DEFAULT}/${OPENSTACK_TENANT}/g" /etc/nubomedia/paas.properties
 sed -i "s/${OPENSTACK_KEY_PAIR_DEFAULT}/${OPENSTACK_KEY_PAIR}/g" /etc/nubomedia/paas.properties
 sed -i "s/${NUBOMEDIA_DEFAULT_ADMIN_PASS}/${NUBOMEDIA_DEFAULT_ADMIN_PASS}/g" /etc/nubomedia/paas.properties
+sed -i "s/${KURENTO_MEDIA_SERVER_DEFAULT}/${KURENTO_MEDIA_SERVER}/g" /etc/nubomedia/paas.properties
 
 # Hardcoded values that need to be updated on the NUBOMEDIA PaaS backend
 sed -i "s/${MONITORING_IP}/${MONITORING_IP}/g" /opt/nubomedia/nubomedia-paas/src/main/resources/static/js/controllers/applicationController.js
 sed -i "s/${PUBLIC_IP}/${EXTERNAL_IP}/g" /opt/nubomedia/nubomedia-paas/src/main/resources/static/js/services/authService.js
 
 # Update the Kurento Media Server USER DATA on nubomedia-msvnfm/src/main/resources/scripts/monitoring.sh
-sed -i "s/${NUBOMEDIA_MONITORING_IP}/${MONITORING_IP}/g" /opt/nubomedia/nubomedia-msvnfm/src/main/resources/scripts/monitoring.sh
-sed -i "s/${NUBOMEDIA_TURN_SERVER_ADDRESS}/${TURN_SERVER_IP}/g" /opt/nubomedia/nubomedia-msvnfm/src/main/resources/scripts/monitoring.sh
-sed -i "s/${NUBOMEDIA_STUN_SERVER_ADDRESS}/${STUN_SERVER_IP}/g" /opt/nubomedia/nubomedia-msvnfm/src/main/resources/scripts/monitoring.sh
+sed -i "s/${NUBOMEDIA_MONITORING_IP_DEFAULT}/${MONITORING_IP}/g" /opt/nubomedia/nubomedia-msvnfm/src/main/resources/scripts/monitoring.sh
+sed -i "s/${NUBOMEDIA_TURN_SERVER_ADDRESS_DEFAULT}/${TURN_SERVER_IP}/g" /opt/nubomedia/nubomedia-msvnfm/src/main/resources/scripts/monitoring.sh
+sed -i "s/${NUBOMEDIA_STUN_SERVER_ADDRESS_DEFAULT}/${STUN_SERVER_IP}/g" /opt/nubomedia/nubomedia-msvnfm/src/main/resources/scripts/monitoring.sh
 
 mysql -u admin -pchangeme --execute='create database openbaton;'
 mysql -u admin -pchangeme --execute='create database nubomedia;'
