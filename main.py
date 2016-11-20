@@ -553,7 +553,7 @@ def autoinstall():
                                                          glanceManager.get_image_id(controller_image_name),
                                                          novaManager.get_flavor_id(controller_flavor),
                                                          private_key,
-                                                         controller_user_data)
+                                                         controller_user_data % (openshift_ip, openshift_domain, iaas_ip, username, password, tenant_name, private_key, nubomedia_admin_paas, instance_monitoring_ip, instance_turn_ip, instance_turn_ip))
     instance_controller_ip = novaManager.associate_floating_ip(instance_controller)
     print "Controller instance name=%s , id=%s , public_ip=%s" % (controller_image_name,
                                                                   instance_controller,
@@ -589,7 +589,7 @@ def autoinstall():
                                  '/tmp/')
 
     # Configure the NUBOMEDIA controller
-    nubomediaManager.run_user_data(instance_controller_ip, "ubuntu", private_key, controller_user_data)
+    nubomediaManager.run_user_data(instance_controller_ip, "ubuntu", private_key, controller_user_data % (openshift_ip, openshift_domain, iaas_ip, username, password, tenant_name, private_key, nubomedia_admin_paas, instance_monitoring_ip, instance_turn_ip, instance_turn_ip))
 
     # Log time needed to boot NUBOMEDIA instances
     cfg_time = time.time() - boot_time
@@ -599,6 +599,8 @@ def autoinstall():
     print "Total time needed for deployment of the NUBOMEDIA platform was %s seconds " % elapsed_time
 
 def manualinstall():
+    # Still under development
+
     iaas_ip = raw_input("Please input the IaaS public IP address : ")
     auth_url = "http://%s:5000/v2.0" % iaas_ip
     username = raw_input("Please input the IaaS admin username : ")
