@@ -2,7 +2,7 @@ from variables import *
 
 # NUBOMEDIA platform images
 download_images = False
-kms_remote_img = 'http://repository.nubomedia.eu/images/kurento_media_server.qcow2'
+kms_remote_img = 'http://repository.nubomedia.eu/images/kms-6.6.1-KVM.qcow2'
 turn_remote_img = 'http://repository.nubomedia.eu/images/turn_server.qcow2'
 monitoring_remote_img = 'http://repository.nubomedia.eu/images/nubomedia_monitoring.qcow2'
 controller_remote_img = 'http://repository.nubomedia.eu/images/nubomedia_controller.qcow2'
@@ -28,6 +28,7 @@ HOST_TEMPLATE="HOSTNAMEMONITORING"
 
 sed -i "s/${HOST_TEMPLATE}/${instance_name_simple}/g" /etc/collectd/collectd.conf
 sed -i "s/${PUBLIC_IP}/${EXTERNAL_IP}/g" /etc/logstash-forwarder.conf
+sed -i "s/${PUBLIC_IP}/${EXTERNAL_IP}/g" /etc/ssl/openssl.cnf
 sed -i "s/${PUBLIC_IP}/${EXTERNAL_IP}/g" /etc/icinga2/features-enabled/graphite.conf
 
 # Format the new attached disk for storing the metrics
