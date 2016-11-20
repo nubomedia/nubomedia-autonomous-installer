@@ -2,10 +2,11 @@ from variables import *
 
 # NUBOMEDIA platform images
 download_images = False
-kms_remote_img = 'http://repository.nubomedia.eu/images/kms-6.6.1-KVM.qcow2'
+upload_images = False
+monitoring_remote_img = 'http://repository.nubomedia.eu/images/nubomedia-monitoring-R91.qcow2'
+controller_remote_img = 'http://repository.nubomedia.eu/images/nubomedia-controller-R91.qcow2'
+kms_remote_img = 'http://repository.nubomedia.eu/images/kurento-media-server-R91.qcow2'
 turn_remote_img = 'http://repository.nubomedia.eu/images/turn_server.qcow2'
-monitoring_remote_img = 'http://repository.nubomedia.eu/images/nubomedia_monitoring.qcow2'
-controller_remote_img = 'http://repository.nubomedia.eu/images/nubomedia_controller.qcow2'
 repository_remote_img = 'http://repository.nubomedia.eu/images/nubomedia_repository.qcow2'
 cloud_repository_remote_img = 'http://repository.nubomedia.eu/images/cloud_repository.qcow2'
 

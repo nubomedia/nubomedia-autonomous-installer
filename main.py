@@ -421,7 +421,6 @@ class NubomediaManager(object):
         sftp.close()
         return None
 
-
     def run_user_data(self, instance_ip, instance_user, instance_key, user_data):
         # Upload user_data
         remote_path = "/tmp/"
@@ -496,31 +495,58 @@ def autoinstall():
     start_time = time.time()
     print 'Starting NUBOMEDIA deployment'
 
-    ###########################
-    # Upload NUBOMEDIA Images
-    ###########################
+    ####################################
+    # Download NUBOMEDIA Images locally
+    ####################################
 
-    # Upload Kurento Media Server Docker Image on Glance
-    glanceManager.upload_docker_image(kms_docker_img, kms_docker_image_description)
+    if download_images:
+        # Download Monitoring Image locally
+        nubomediaManager.download_images(monitoring_remote_img, monitoring_qemu_img)
 
-    # Upload Monitoring machine Image on Glance
-    glanceManager.upload_remote_image(monitoring_image_name, monitoring_remote_img, monitoring_image_description)
+        # Download Kurento Media Server Image locally
+        nubomediaManager.download_images(kms_remote_img, kms_qemu_img)
 
-    # Upload TURN Server Image on Glance
-    glanceManager.upload_remote_image(turn_image_name, turn_remote_img, turn_image_description)
+        # Download NUBOMEDIA Controller locally
+        nubomediaManager.download_images(controller_remote_img, controller_qemu_img)
 
-    # Upload Cloud Repository Image on Glance
-    glanceManager.upload_remote_image(cloud_repository_image_name,
-                                      cloud_repository_remote_img,
-                                      cloud_repository_image_description)
+        # Download TURN Server locally
+        nubomediaManager.download_images(turn_remote_img, turn_qemu_img)
 
-    # Upload Controller Image on Glance
-    glanceManager.upload_remote_image(controller_image_name, controller_remote_img, controller_image_description)
+        # Download Cloud Repository locally
+        nubomediaManager.download_images(cloud_repository_remote_img, cloud_repository_qemu_img)
 
-    # Log time needed to upload NUBOMEDIA Images
-    upload_time = time.time() - start_time
-    print "Time needed for uploading of the NUBOMEDIA images was %s seconds " % upload_time
-    upload_time = time.time()
+        # Download NUBOMEDIA Repository locally
+        nubomediaManager.download_images(repository_remote_img, repository_qemu_img)
+
+    ####################################
+    # Upload NUBOMEDIA Images if needed
+    ####################################
+
+    if upload_images:
+        # Upload Kurento Media Server Docker Image on Glance
+        glanceManager.upload_docker_image(kms_docker_img, kms_docker_image_description)
+
+        # Upload Kurento Media Server KVM Image on Glance
+        glanceManager.upload_docker_image(kms_image_name, kms_image_description)
+
+        # Upload Monitoring machine Image on Glance
+        glanceManager.upload_remote_image(monitoring_image_name, monitoring_remote_img, monitoring_image_description)
+
+        # Upload TURN Server Image on Glance
+        glanceManager.upload_remote_image(turn_image_name, turn_remote_img, turn_image_description)
+
+        # Upload Cloud Repository Image on Glance
+        glanceManager.upload_remote_image(cloud_repository_image_name,
+                                          cloud_repository_remote_img,
+                                          cloud_repository_image_description)
+
+        # Upload Controller Image on Glance
+        glanceManager.upload_remote_image(controller_image_name, controller_remote_img, controller_image_description)
+
+        # Log time needed to upload NUBOMEDIA Images
+        upload_time = time.time() - start_time
+        print "Time needed for uploading of the NUBOMEDIA images was %s seconds " % upload_time
+        upload_time = time.time()
 
     #######################################
     # Start NUBOMEDIA platform instances
@@ -553,7 +579,17 @@ def autoinstall():
                                                          glanceManager.get_image_id(controller_image_name),
                                                          novaManager.get_flavor_id(controller_flavor),
                                                          private_key,
-                                                         controller_user_data % (openshift_ip, openshift_domain, iaas_ip, username, password, tenant_name, private_key, nubomedia_admin_paas, instance_monitoring_ip, instance_turn_ip, instance_turn_ip))
+                                                         controller_user_data % (openshift_ip,
+                                                                                 openshift_domain,
+                                                                                 iaas_ip,
+                                                                                 username,
+                                                                                 password,
+                                                                                 tenant_name,
+                                                                                 private_key,
+                                                                                 nubomedia_admin_paas,
+                                                                                 instance_monitoring_ip,
+                                                                                 instance_turn_ip,
+                                                                                 instance_turn_ip))
     instance_controller_ip = novaManager.associate_floating_ip(instance_controller)
     print "Controller instance name=%s , id=%s , public_ip=%s" % (controller_image_name,
                                                                   instance_controller,
@@ -589,7 +625,18 @@ def autoinstall():
                                  '/tmp/')
 
     # Configure the NUBOMEDIA controller
-    nubomediaManager.run_user_data(instance_controller_ip, "ubuntu", private_key, controller_user_data % (openshift_ip, openshift_domain, iaas_ip, username, password, tenant_name, private_key, nubomedia_admin_paas, instance_monitoring_ip, instance_turn_ip, instance_turn_ip))
+    nubomediaManager.run_user_data(instance_controller_ip, "ubuntu", private_key,
+                                   controller_user_data % (openshift_ip,
+                                                           openshift_domain,
+                                                           iaas_ip,
+                                                           username,
+                                                           password,
+                                                           tenant_name,
+                                                           private_key,
+                                                           nubomedia_admin_paas,
+                                                           instance_monitoring_ip,
+                                                           instance_turn_ip,
+                                                           instance_turn_ip))
 
     # Log time needed to boot NUBOMEDIA instances
     cfg_time = time.time() - boot_time
@@ -599,8 +646,6 @@ def autoinstall():
     print "Total time needed for deployment of the NUBOMEDIA platform was %s seconds " % elapsed_time
 
 def manualinstall():
-    # Still under development
-
     iaas_ip = raw_input("Please input the IaaS public IP address : ")
     auth_url = "http://%s:5000/v2.0" % iaas_ip
     username = raw_input("Please input the IaaS admin username : ")
