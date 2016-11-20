@@ -58,7 +58,7 @@ It is best to also add a public key on the OpenStack tenant you want to deploy N
 *x.x.x.x* represents the public IP address of the OpenShift PaaS.
 
 ## NUBOMEDIA images
-You should download all the NUBOMEDIA images and store them on the *repository/images/* directory.
+You should download all the NUBOMEDIA images and store them on the *http://repository.nubomedia.eu/images/* directory.
 
 ### NUBOMEDIA Kurento Media Server - qemu image for KVM
 ```
