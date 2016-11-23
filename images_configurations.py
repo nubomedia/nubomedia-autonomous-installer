@@ -32,15 +32,28 @@ sed -i "s/${PUBLIC_IP}/${EXTERNAL_IP}/g" /etc/logstash-forwarder.conf
 sed -i "s/${PUBLIC_IP}/${EXTERNAL_IP}/g" /etc/ssl/openssl.cnf
 sed -i "s/${PUBLIC_IP}/${EXTERNAL_IP}/g" /etc/icinga2/features-enabled/graphite.conf
 
-# Format the new attached disk for storing the metrics
-(echo n; echo p; echo 1; echo ; echo; echo w) | fdisk /dev/vdb
-mkfs.ext4 /dev/vdb1
+mkdir -p /data/elasticsearch
+mkdir -p /data/graphite
+chown -R elasticsearch.elasticsearch /data/elasticsearch
+chown -R _graphite._graphite /data/graphite
 
-# Add the new partition to be automounted on reboot
-sed -i "\$a/dev/vdb1       /data   ext4    defaults 0 0" /etc/fstab
+# Restart all services
+service mysql restart
+service carbon-cache restart
+service collectd restart
+service elasticsearch restart
+service kibana4 restart
 
-# Mount the partition
-mount -a
+
+# # Format the new attached disk for storing the metrics
+# (echo n; echo p; echo 1; echo ; echo; echo w) | fdisk /dev/vdb
+# mkfs.ext4 /dev/vdb1
+#
+# # Add the new partition to be automounted on reboot
+# sed -i "\$a/dev/vdb1       /data   ext4    defaults 0 0" /etc/fstab
+#
+# # Mount the partition
+# mount -a
 
 reboot
 """
@@ -160,7 +173,7 @@ sed -i "s/${OPENSTACK_USERNAME_DEFAULT}/${OPENSTACK_USERNAME}/g" /etc/nubomedia/
 sed -i "s/${OPENSTACK_PASSWORD_DEFAULT}/${OPENSTACK_PASSWORD}/g" /etc/nubomedia/paas.properties
 sed -i "s/${OPENSTACK_TENANT_DEFAULT}/${OPENSTACK_TENANT}/g" /etc/nubomedia/paas.properties
 sed -i "s/${OPENSTACK_KEY_PAIR_DEFAULT}/${OPENSTACK_KEY_PAIR}/g" /etc/nubomedia/paas.properties
-sed -i "s/${NUBOMEDIA_DEFAULT_ADMIN_PASS}/${NUBOMEDIA_DEFAULT_ADMIN_PASS}/g" /etc/nubomedia/paas.properties
+sed -i "s/${NUBOMEDIA_DEFAULT_ADMIN_PASS_DEFAULT}/${NUBOMEDIA_DEFAULT_ADMIN_PASS}/g" /etc/nubomedia/paas.properties
 sed -i "s/${KURENTO_MEDIA_SERVER_DEFAULT}/${KURENTO_MEDIA_SERVER}/g" /etc/nubomedia/paas.properties
 
 # Hardcoded values that need to be updated on the NUBOMEDIA PaaS backend

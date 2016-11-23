@@ -28,6 +28,6 @@ openshift_ip = 'x.x.x.x'
 # OpenShift Keystore that should be generated using the Portacle tool from http://portecle.sourceforge.net/
 openshift_keystore = 'openshift-keystore'
 openshift_domain = 'apps.nubomedia-paas.eu'
-
+openshift_token = 'oimqwoi29m31290xmu23904u2390z432mu90z432m90432mu90z42mz29031209z3m190z3n128...'
 nubomedia_admin_paas = 'nubomediapaas'
 use_kurento_on_docker = False

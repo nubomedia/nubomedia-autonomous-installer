@@ -52,8 +52,13 @@ For authentication you should either define the *master_pass* as a string variab
 floating_ip_pool = 'external'
 private_key = 'private_key_for_accesssing_instances'
 openshift_ip = 'x.x.x.x'
+openshift_keystore = keystore
+openshift_token = xyxyxyxyxyx
+openshift_domain = apps.example.com
 ```
-You should define the floating (public) IP pool name for the OpenStack.  
+You should generate the OpenShift token using the details found here : https://docs.openshift.com/enterprise/3.1/rest_api/index.html#rest-api-serviceaccount-tokens
+The openshift_domain name should be having a wildcard DNS entry pointing to the OpenShift public IP.
+You should also define the floating (public) IP pool name for the OpenStack.  
 It is best to also add a public key on the OpenStack tenant you want to deploy NUBOMEDIA and then add the private key file to the autonomous-installer directory in order to allow it to customize the instances after deployment.  
 *x.x.x.x* represents the public IP address of the OpenShift PaaS.
 

@@ -484,7 +484,7 @@ def autoinstall():
     # Connect to Cinder and create disk
     cinderManager = CinderManager(**kwargs)
     cinderManager.get_volumes_list()
-    monitoring_disk = cinderManager.create_volume("monitoring_disk", 10)
+    # monitoring_disk = cinderManager.create_volume("monitoring_disk", 10)
 
     # Create a floating IP if there is no floating IP on that tenant
     print novaManager.create_floating_ip()
@@ -567,16 +567,15 @@ def autoinstall():
                                                                   instance_monitoring_ip)
 
     # Start TURN Server instance
-    # instance_turn = novaManager.start_kvm_instance(turn_image_name,
-    #                                                glanceManager.get_image_id(turn_image_name),
-    #                                                novaManager.get_flavor_id(turn_flavor),
-    #                                                private_key,
-    #                                                turn_user_data)
-    # instance_turn_ip = novaManager.associate_floating_ip(instance_turn)
-    # print "TURN instance name=%s , id=%s , public_ip=%s" % (turn_image_name,
-    #                                                         instance_turn,
-    #                                                         instance_turn_ip)
-    instance_turn_ip = '80.96.122.61'
+    instance_turn = novaManager.start_kvm_instance(turn_image_name,
+                                                   glanceManager.get_image_id(turn_image_name),
+                                                   novaManager.get_flavor_id(turn_flavor),
+                                                   private_key,
+                                                   turn_user_data)
+    instance_turn_ip = novaManager.associate_floating_ip(instance_turn)
+    print "TURN instance name=%s , id=%s , public_ip=%s" % (turn_image_name,
+                                                            instance_turn,
+                                                            instance_turn_ip)
 
     # Start Controller instance
     instance_controller = novaManager.start_kvm_instance(controller_image_name,
@@ -603,7 +602,7 @@ def autoinstall():
     # properly provisioned and booted
     time.sleep(240)
 
-    cinderManager.attach_volume(monitoring_disk, instance_monitoring, '/dev/vdb')
+    # cinderManager.attach_volume(monitoring_disk, instance_monitoring, '/dev/vdb')
 
     # Delay for allowing the volume to get attached to the monitoring instance
     time.sleep(60)
@@ -611,7 +610,7 @@ def autoinstall():
     nubomediaManager.run_user_data(instance_monitoring_ip, "ubuntu", private_key, monitoring_user_data)
 
     # Configure the TURN server instance
-    # nubomediaManager.run_user_data(instance_turn_ip, "ubuntu", private_key, turn_user_data)
+    nubomediaManager.run_user_data(instance_turn_ip, "ubuntu", private_key, turn_user_data)
 
     # Configuring the Controller instance
     # Upload the OpenShift Keystore first
